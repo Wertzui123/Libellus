@@ -1,0 +1,30 @@
+import encoding.ascii
+
+function sort_alphabetically(list<string> strings) returns list<string>{
+    var list<string> sorted = []
+    foreach(strings as s){
+        var int i = 0
+        while(i < sorted.length){
+            if(is_char_smaller_than(s, sorted[i])){
+                break
+            }
+            i++
+        }
+        sorted.insert(i, s)
+    }
+    return sorted
+}
+
+function is_char_smaller_than(string a, string b) returns bool{
+    var int i = 0
+    while(i < a.length && i < b.length){
+        if(encoding.ascii.encode_char(a[i]) < encoding.ascii.encode_char(b[i])){
+            return true
+        }
+        if(encoding.ascii.encode_char(a[i]) > encoding.ascii.encode_char(b[i])){
+            return false
+        }
+        i++
+    }
+    return a.length < b.length
+}

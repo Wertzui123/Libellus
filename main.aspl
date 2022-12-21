@@ -1,0 +1,1337 @@
+import graphics
+import math
+import math.geometry
+import os
+import time
+import io
+import libellus.utils
+import json
+
+var int UNDO_REDO_LIMIT = 30
+
+var Window window = new Window(500, 500)
+
+if(!io.exists_directory(Booklet:getBookletsPath())){
+    io.create_directory(Booklet:getBookletsPath())
+}
+
+foreach([
+    map<string, any>{
+        "name" => "Libellus",
+        "color" => new Color(255, 249, 186, 5)
+    },
+    map<string, any>{
+        "name" => "English",
+        "color" => new Color(255, 0, 255, 0)
+    },
+    map<string, any>{
+        "name" => "German",
+        "color" => new Color(255, 0, 0, 255)
+    },
+    map<string, any>{
+        "name" => "History",
+        "color" => new Color(255, 128, 64, 64)
+    },
+    map<string, any>{
+        "name" => "Math",
+        "color" => new Color(255, 255, 0, 0)
+    },
+    map<string, any>{
+        "name" => "Physics",
+        "color" => new Color(255, 255, 255, 0)
+    }
+] as b){
+    var create = false
+    if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"])]))){
+        create = true
+        io.create_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"])]))
+    }
+    if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "sheets"]))){
+        io.create_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "sheets"]))
+    }
+    if(create || !io.exists_file(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "booklet.json"]))){
+        io.write_file(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "booklet.json"]), json.encode(map<string, any>{"color" => map<string, any>{"r" => Color(b["color"]).r, "g" => Color(b["color"]).g, "b" => Color(b["color"]).b, "a" => Color(b["color"]).a}, "sheets" => list<any>[], "scroll" => map<string, any>{"x" => 0, "y" => 0}}))
+    }
+}
+
+var bookletName = "Libellus"
+if(!io.exists_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))){
+    io.write_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]), bookletName)
+}else{
+    bookletName = io.read_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))
+}
+var list<Booklet> booklets = []
+var Booklet booklet = new Booklet("Notes", new Color(255, 249, 186, 5), new ChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window)), [], 0, 0)
+var hasAnySelected = false
+var bookletFolders = utils.sort_alphabetically(io.directories(Booklet:getBookletsPath()))
+{
+    var int i = 0
+    foreach(bookletFolders as folder){
+        if(i > 0 && folder == "Libellus"){
+            bookletFolders.removeAt(i)
+            bookletFolders.insert(0, folder)
+        }
+        i++
+    }
+}
+foreach(bookletFolders as folder){
+    if(!io.exists_directory(folder) && io.exists_directory(io.join_path([Booklet:getBookletsPath(), folder]))){
+        folder = io.join_path([Booklet:getBookletsPath(), folder])
+    }
+    if(io.exists_directory(folder)){
+        if(!io.exists_file(io.join_path([folder, "booklet.json"]))){
+            continue
+        }
+        var data = json.decode(io.read_file(io.join_path([folder, "booklet.json"])))
+        var c = new ChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window))
+        var list<string> sheetFiles = []
+        if(map<string, any>(data).containsKey("sheets")){
+            foreach(list<any>(map<string, any>(data)["sheets"]) as sheet){
+                sheetFiles.add(string(sheet))
+            }
+        }
+        var scrollX = 0
+        var scrollY = 0
+        if(map<string, any>(data).containsKey("scroll")){
+            scrollX = int(map<string, any>(map<string, any>(data)["scroll"])["x"])
+            scrollY = int(map<string, any>(map<string, any>(data)["scroll"])["y"])
+        }
+        var Booklet b = new Booklet(io.directory_name(folder), new Color(255, byte(map<string, any>(map<string, any>(data)["color"])["r"]), byte(map<string, any>(map<string, any>(data)["color"])["g"]), byte(map<string, any>(map<string, any>(data)["color"])["b"])), c, sheetFiles, scrollX, scrollY)
+        if(b.name == bookletName){
+            booklet = b
+            booklet.prepare()
+            hasAnySelected = true
+            AppState:scrollX = scrollX
+            AppState:scrollY = scrollY
+        }
+        booklets.add(b)
+    }
+}
+if(booklets.length == 0 || !hasAnySelected){
+    booklets.add(booklet)
+}
+var pens = [new Pen(new Color(255, 0, 0, 0), 2), new Pen(new Color(255, 255, 0, 0), 2), new Pen(new Color(255, 0, 255, 0), 2), new Pen(new Color(255, 0, 0, 255), 2), new Pen(new Color(255, 255, 255, 0), 2)]
+var Pen|Eraser pen = pens[0]
+var eraser = new Eraser(30)
+var list<Canvas> penIcons = []
+var penIconData = $embed("icons/pen.png")
+var eraserIcon = new Canvas(1, 1)
+var themeSwitchIcon = new Canvas(1, 1)
+var undoIconOriginal = Canvas:fromFileData($embed("icons/undo.png"))
+var redoIconOriginal = Canvas:fromFileData($embed("icons/redo.png"))
+var undoIcon = new Canvas(1, 1)
+var redoIcon = new Canvas(1, 1)
+var imageImporterIcon = new Canvas(1, 1)
+var folderIcon = new Canvas(1, 1)
+var imageFileIcon = new Canvas(1, 1)
+var bookletIcon = new Canvas(1, 1)
+var newSheetIconOriginal = Canvas:fromFileData($embed("icons/new_sheet.png"))
+var sheetCollectionHeight = 0
+var list<Rectangle> sheetCollectionBounds = []
+var sheetImporterHeight = 0
+// TODO: The below lists should be of type ImageDiff (or ChunkedCanvas|Canvas with the $legacyUndoRedo flag), but due to a bug in ASPL, this is currently not possible
+var list<any> undoList = []
+var list<any> redoList = []
+var Theme theme = Theme.Light
+if(io.exists_file(io.join_path([Booklet:getBookletsPath(), "theme.txt"]))){
+    var t = io.read_file(io.join_path([Booklet:getBookletsPath(), "theme.txt"]))
+    if(t == "light"){
+        theme = Theme.Light
+    }elseif(t == "dark"){
+        theme = Theme.Dark
+    }
+}else{
+    io.write_file(io.join_path([Booklet:getBookletsPath(), "theme.txt"]), "light")
+}
+var hasChanged = false
+var hasChangedForOnPaint = false
+var hasScrollChanged = false
+var hasSizeChanged = false
+var hasSizeChangedForOnPaint = false
+var hasThemeChanged = false
+var hasThemeChangedForOnPaint = false
+var hasUndoAvailabilityChanged = false
+var hasRedoAvailabilityChanged = false
+var isMouseDown = false
+var zone = Zone.Canvas
+var sheetImporterPath = ""
+window.onMouseDown = callback(Point position, MouseButton button) {
+    if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
+        if (button == MouseButton.Left){
+            isMouseDown = true
+            if(zone == Zone.Canvas || zone == Zone.Sheet){
+                if(undoList.length == 0){
+                    hasUndoAvailabilityChanged = true
+                }
+                if(zone == Zone.Canvas){
+                    $if legacyUndoRedo{
+                        if(booklet.canvas.width * booklet.canvas.height > 5000000){
+                            // TODO: Remove this workaround when the undo/redo system doesn't store the entire canvas in memory
+                            undoList.clear()
+                        }
+                        undoList.add(booklet.canvas.copy())
+                    }$else{
+                        undoList.add(new ImageDiff())
+                    }
+                }elseif(zone == Zone.Sheet){
+                    $if legacyUndoRedo{
+                        undoList.add(Sheet(booklet.currentSheet).canvas.copy())
+                    }$else{
+                        undoList.add(new ImageDiff())
+                    }
+                }
+                if(undoList.length > UNDO_REDO_LIMIT){
+                    undoList.removeAt(0)
+                }
+                if(redoList.length > 0){
+                    redoList.clear()
+                    hasRedoAvailabilityChanged = true
+                }
+                if(pen == eraser){
+                    if(zone == Zone.Canvas){
+                        $if !legacyUndoRedo{
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                        }
+                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                    }elseif(zone == Zone.Sheet){
+                        $if !legacyUndoRedo{
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                        }
+                        Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                    }
+                }else{
+                    if(zone == Zone.Canvas){
+                        $if !legacyUndoRedo{
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), booklet.canvas)
+                        }
+                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), Pen(pen).color)
+
+                        // automatically resize canvas when drawing near the edge
+                        if((booklet.canvas.width < ((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
+                            booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                        }
+                    }elseif(zone == Zone.Sheet){
+                        $if !legacyUndoRedo{
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), Sheet(booklet.currentSheet).canvas)
+                        }
+                        Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), Pen(pen).color)
+                    }
+                }
+                hasChanged = true
+                hasChangedForOnPaint = true
+                if(booklet.currentSheet != null){
+                    Sheet(booklet.currentSheet).hasChanged = true
+                }
+            }
+        }
+    }
+}
+window.onMouseUp = callback(Point position, MouseButton button) {
+    if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
+        if (button == MouseButton.Left) {
+            isMouseDown = false
+        }
+    }
+}
+var currentMousePosition = new Point(-1, -1)
+window.onMouseMove = callback(Point position, float deltaX, float deltaY) {
+    currentMousePosition = position
+    if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
+        if (isMouseDown) {
+            if(zone == Zone.Canvas || zone == Zone.Sheet){
+                if(pen == eraser){
+                    if(zone == Zone.Canvas){
+                        $if !legacyUndoRedo{
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                        }
+                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                    }elseif(zone == Zone.Sheet){
+                        $if !legacyUndoRedo{
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                        }
+                        Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                    }
+                }else{
+                    if(zone == Zone.Canvas){
+                        $if !legacyUndoRedo{
+                            ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
+                        }
+                        booklet.canvas.drawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+
+                        // automatically resize canvas when drawing near the edge
+                        if((booklet.canvas.width < ((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
+                            booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                        }
+                    }elseif(zone == Zone.Sheet){
+                        Sheet(booklet.currentSheet).canvas.drawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                    }
+                }
+                hasChanged = true
+                hasChangedForOnPaint = true
+                if(booklet.currentSheet != null){
+                    Sheet(booklet.currentSheet).hasChanged = true
+                }
+            }
+        }
+    }
+}
+window.onMouseClick = callback(Point position, MouseButton button) {
+    if (button == MouseButton.Left) {
+        if(position.y < get_toolbar_height(window)){
+            var i = 0
+            foreach(pens as p){
+                var penIcon = penIcons[i]
+                if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width && position.y > get_toolbar_height(window) / 2f - penIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - penIcon.height / 2 + penIcon.height){
+                    pen = p
+                }
+                i++
+            }
+            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width && position.y > get_toolbar_height(window) / 2f - eraserIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - eraserIcon.height / 2 + eraserIcon.height){
+                pen = eraser
+            }
+            i++
+            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2) + undoIcon.width && position.y > get_toolbar_height(window) / 2f - undoIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - undoIcon.height / 2 + undoIcon.height){
+                if(zone == Zone.Canvas || zone == Zone.Sheet){
+                    if(undoList.length > 0){
+                        if(redoList.length == 0){
+                            hasRedoAvailabilityChanged = true
+                        }
+                        if(zone == Zone.Canvas){
+                            $if legacyUndoRedo{
+                                redoList.add(booklet.canvas.copy())
+                                booklet.canvas = ChunkedCanvas(undoList[undoList.length - 1])
+                            }$else{
+                                redoList.add(ImageDiff(undoList[undoList.length - 1]).apply(booklet.canvas))
+                            }
+                        }elseif(zone == Zone.Sheet){
+                            $if legacyUndoRedo{
+                                redoList.add(Sheet(booklet.currentSheet).canvas.copy())
+                                Sheet(booklet.currentSheet).canvas = Canvas(undoList[undoList.length - 1])
+                            }$else{
+                                redoList.add(ImageDiff(undoList[undoList.length - 1]).apply(Sheet(booklet.currentSheet).canvas))
+                            }
+                        }
+                        undoList.removeAt(undoList.length - 1)
+                        if(undoList.length == 0){
+                            hasUndoAvailabilityChanged = true
+                        }
+                        hasChanged = true
+                        hasChangedForOnPaint = true
+                        if(booklet.currentSheet != null){
+                            Sheet(booklet.currentSheet).hasChanged = true
+                        }
+                    }
+                }
+            }
+            i++
+            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - redoIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - redoIcon.width / 2) + redoIcon.width && position.y > get_toolbar_height(window) / 2f - redoIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - redoIcon.height / 2 + redoIcon.height){
+                if(zone == Zone.Canvas || zone == Zone.Sheet){
+                    if(redoList.length > 0){
+                        if(undoList.length == 0){
+                            hasUndoAvailabilityChanged = true
+                        }
+                        if(zone == Zone.Canvas){
+                            $if legacyUndoRedo{
+                                undoList.add(booklet.canvas.copy())
+                                booklet.canvas = ChunkedCanvas(redoList[redoList.length - 1])
+                            }$else{
+                                undoList.add(ImageDiff(redoList[redoList.length - 1]).apply(booklet.canvas))
+                            }
+                        }elseif(zone == Zone.Sheet){
+                            $if legacyUndoRedo{
+                                undoList.add(Sheet(booklet.currentSheet).canvas.copy())
+                                Sheet(booklet.currentSheet).canvas = Canvas(redoList[redoList.length - 1])
+                            }$else{
+                                undoList.add(ImageDiff(redoList[redoList.length - 1]).apply(Sheet(booklet.currentSheet).canvas))
+                            }
+                        }
+                        redoList.removeAt(redoList.length - 1)
+                        if(redoList.length == 0){
+                            hasRedoAvailabilityChanged = true
+                        }
+                        hasChanged = true
+                        hasChangedForOnPaint = true
+                        if(booklet.currentSheet != null){
+                            Sheet(booklet.currentSheet).hasChanged = true
+                        }
+                    }
+                }
+            }
+            i++
+            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - imageImporterIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - imageImporterIcon.width / 2) + imageImporterIcon.width && position.y > get_toolbar_height(window) / 2f - imageImporterIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - imageImporterIcon.height / 2 + imageImporterIcon.height){
+                if(zone == Zone.SheetCollection){
+                    zone = Zone.Canvas
+                }else{
+                    zone = Zone.SheetCollection
+                }
+                if(zone == Zone.Canvas){
+                    AppState:scrollX = booklet.scrollX
+                    AppState:scrollY = booklet.scrollY
+                }else{
+                    AppState:scrollX = 0
+                    AppState:scrollY = 0
+                }
+                AppState:zoom = 1
+                if(undoList.length > 0){
+                    undoList.clear()
+                    hasUndoAvailabilityChanged = true
+                }
+                if(redoList.length > 0){
+                    redoList.clear()
+                    hasRedoAvailabilityChanged = true
+                }
+                hasChangedForOnPaint = true
+            }
+            i++
+            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2) + themeSwitchIcon.width && position.y > get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 + themeSwitchIcon.height){
+                if(theme == Theme.Light){
+                    theme = Theme.Dark
+                    hasThemeChanged = true
+                    hasThemeChangedForOnPaint = true
+                }else{
+                    theme = Theme.Light
+                    hasThemeChanged = true
+                    hasThemeChangedForOnPaint = true
+                }
+            }
+        }elseif(position.x <= get_booklet_list_width(window)){
+            var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 30d, 10d))).asUnderlined()
+            var y = int(graphics.measure_text_size("Booklets", font).height * 3) + get_toolbar_height(window)
+            font = font.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 70d, 7d)))
+            var int i = 0
+            foreach(booklets as b){
+                var name = b.name
+                if(b == booklet){
+                    name += " [x]"
+                }
+                var size = graphics.measure_text_size(name, font)
+                var height = int(size.height)
+                if(position.y >= y - height * 1.5 && position.y <= y){
+                    booklet.unprepare()
+                    booklet = b
+                    booklet.prepare()
+                    if(undoList.length > 0){
+                        undoList.clear()
+                        hasUndoAvailabilityChanged = true
+                    }
+                    if(redoList.length > 0){
+                        redoList.clear()
+                        hasRedoAvailabilityChanged = true
+                    }
+                    AppState:scrollX = b.scrollX
+                    AppState:scrollY = b.scrollY
+                    AppState:zoom = 1
+                    zone = Zone.Canvas
+                    hasChanged = true
+                    hasChangedForOnPaint = true
+                    hasSizeChanged = true
+                    hasSizeChangedForOnPaint = true
+                }
+                y += int(bookletIcon.height * 1.2)
+                i++
+            }
+        }else{
+            if(zone == Zone.SheetCollection){
+                var int i = 0
+                foreach(sheetCollectionBounds as b){
+                    if(position.x >= b.position.x && position.x <= b.position.x + b.size.width && position.y >= b.position.y && position.y <= b.position.y + b.size.height){
+                        if(i == 0){
+                            zone = Zone.SheetImporter
+                            sheetImporterPath = io.get_home_directory()
+                            booklet.currentSheet = null
+                            AppState:scrollX = 0
+                            AppState:scrollY = 0
+                            AppState:zoom = 1
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            hasSizeChanged = true
+                            hasSizeChangedForOnPaint = true
+                        }else{
+                            zone = Zone.Sheet
+                            booklet.currentSheet = booklet.sheets[i - 1]
+                            AppState:scrollX = 0
+                            AppState:scrollY = 0
+                            AppState:zoom = 1
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            hasSizeChanged = true
+                            hasSizeChangedForOnPaint = true
+                        }
+                    }
+                    i++
+                }
+            }elseif(zone == Zone.SheetImporter){
+                var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 7d)))
+                var color = new Color(255, 0, 0, 0)
+                if(theme == Theme.Dark){
+                    color = new Color(255, 255, 255, 255)
+                }
+                var ls = utils.ls(sheetImporterPath, [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".hdr"])
+                var i = 0
+                var factor = 20 // TODO: Do not hardcode this
+                $if android{
+                    factor = 40
+                }
+                var y = factor + get_toolbar_height(window) - AppState:scrollY
+                foreach(ls as s){
+                    var size = graphics.measure_text_size(s, font)
+                    var width = int(size.width)
+                    var height = int(size.height)
+                    if(position.x >= window.width / 2 - width / 2 && position.x <= window.width / 2 + width / 2 && position.y >= y && position.y <= y + height){
+                        if(io.exists_directory(io.join_path([sheetImporterPath, s]))){
+                            if(s == ".."){
+                                sheetImporterPath = sheetImporterPath.reverse().split("/", 2)[1].reverse()
+                            }else{
+                                sheetImporterPath = io.join_path([sheetImporterPath, s])
+                            }
+                            AppState:scrollY = 0
+                        }else{
+                            io.write_file_bytes(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s, io.read_file_bytes(io.join_path([sheetImporterPath, s])))
+                            var Sheet sheet = Sheet:fromFile(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s)
+                            booklet.sheets.add(sheet)
+                            booklet.currentSheet = sheet
+                            zone = Zone.Sheet
+                            AppState:scrollX = 0
+                            AppState:scrollY = 0
+                            AppState:zoom = 1
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            hasSizeChanged = true
+                            hasSizeChangedForOnPaint = true
+                            sheet.hasChanged = true
+                        }
+                    }
+                    y += factor
+                    i++
+                }
+            }
+        }
+    }
+}
+window.onMouseWheel = callback(Point position, float deltaX, float deltaY) {
+    if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
+        if(window.isKeyDown(KeyCode.left_control) || window.isKeyDown(KeyCode.right_control)){
+            if(zone == Zone.Canvas || zone == Zone.Sheet){
+                if(deltaY > 0){
+                    AppState:zoom += 0.1
+                }else{
+                    AppState:zoom -= 0.1
+                }
+                if(AppState:zoom < 0.2){
+                    AppState:zoom = 0.2
+                }
+                if(AppState:zoom > 5){
+                    AppState:zoom = 5
+                }
+            }
+        }else{
+            if(window.isKeyDown(KeyCode.left_shift) || window.isKeyDown(KeyCode.right_shift)){
+                if(deltaY > 0){
+                    if(zone == Zone.Canvas || zone == Zone.Sheet){
+                        AppState:scrollX = int(math.max(AppState:scrollX - double(deltaY * 5 / AppState:zoom), 0))
+                        if(zone == Zone.Canvas){
+                            booklet.scrollX = AppState:scrollX
+                            hasScrollChanged = true
+                        }
+                    }
+                }elseif(deltaY < 0){
+                    if(zone == Zone.Canvas){
+                        AppState:scrollX = int(math.max(math.min(AppState:scrollX - double(deltaY * 5 / AppState:zoom), double(booklet.canvas.width - window.width / AppState:zoom + get_booklet_list_width(window))), 0))
+                        booklet.scrollX = AppState:scrollX
+                        hasScrollChanged = true
+                    }elseif(zone == Zone.Sheet){
+                        AppState:scrollX = int(math.max(math.min(AppState:scrollX - double(deltaY * 5 / AppState:zoom), double(Sheet(booklet.currentSheet).canvas.width - window.width / AppState:zoom + get_booklet_list_width(window))), 0))
+                    }
+                }
+            }else{
+                if(deltaY > 0){
+                    if(zone == Zone.Canvas || zone == Zone.SheetCollection || zone == Zone.Sheet || zone == Zone.SheetImporter){
+                        AppState:scrollY = int(math.max(AppState:scrollY - double(deltaY * 5 / AppState:zoom), 0))
+                        if(zone == Zone.Canvas){
+                            booklet.scrollY = AppState:scrollY
+                            hasScrollChanged = true
+                        }
+                    }
+                }elseif(deltaY < 0){
+                    if(zone == Zone.Canvas || zone == Zone.SheetCollection || zone == Zone.Sheet || zone == Zone.SheetImporter){
+                        var boundHeight = booklet.canvas.height
+                        if(zone == Zone.SheetCollection){
+                            boundHeight = sheetCollectionHeight
+                        }elseif(zone == Zone.Sheet){
+                            boundHeight = Sheet(booklet.currentSheet).canvas.height
+                        }elseif(zone == Zone.SheetImporter){
+                            boundHeight = sheetImporterHeight
+                        }
+                        AppState:scrollY = int(math.max(math.min(AppState:scrollY - double(deltaY * 5 / AppState:zoom), double(boundHeight - window.height / AppState:zoom + get_toolbar_height(window))), 0))
+                        if(zone == Zone.Canvas){
+                            booklet.scrollY = AppState:scrollY
+                            hasScrollChanged = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+window.onTouchDown = callback(list<TouchPoint> points){
+    foreach(points as point){
+        if(point.changed && point.position.x > get_booklet_list_width(window) && point.position.y > get_toolbar_height(window)){
+            if(point.toolType == TouchToolType.Stylus){
+                if(zone == Zone.Canvas || zone == Zone.Sheet){
+                    if(undoList.length == 0){
+                        hasUndoAvailabilityChanged = true
+                    }
+                    if(zone == Zone.Canvas){
+                        $if legacyUndoRedo{
+                            if(booklet.canvas.width * booklet.canvas.height > 5000000){
+                                // TODO: Remove this workaround when the undo/redo system doesn't store the entire canvas in memory
+                                undoList.clear()
+                            }
+                            undoList.add(booklet.canvas.copy())
+                        }$else{
+                            undoList.add(new ImageDiff())
+                        }
+                    }elseif(zone == Zone.Sheet){
+                        $if legacyUndoRedo{
+                            undoList.add(Sheet(booklet.currentSheet).canvas.copy())
+                        }$else{
+                            undoList.add(new ImageDiff())
+                        }
+                    }
+                    if(undoList.length > UNDO_REDO_LIMIT){
+                        undoList.removeAt(0)
+                    }
+                    if(redoList.length > 0){
+                        redoList.clear()
+                        hasRedoAvailabilityChanged = true
+                    }
+                    if(pen == eraser){
+                        if(zone == Zone.Canvas){
+                            $if !legacyUndoRedo{
+                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                            }
+                            booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        }elseif(zone == Zone.Sheet){
+                            $if !legacyUndoRedo{
+                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                            }
+                            Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        }
+                    }else{
+                        if(zone == Zone.Canvas){
+                            $if !legacyUndoRedo{
+                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), booklet.canvas)
+                            }
+                            booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), Pen(pen).color)
+
+                            // automatically resize canvas when drawing near the edge
+                            if((booklet.canvas.width < ((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
+                                booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                            }
+                        }elseif(zone == Zone.Sheet){
+                            $if !legacyUndoRedo{
+                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), Sheet(booklet.currentSheet).canvas)
+                            }
+                            Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Pen(pen).thickness), float(Pen(pen).thickness))), Pen(pen).color)
+                        }
+                    }
+                    hasChanged = true
+                    hasChangedForOnPaint = true
+                    if(booklet.currentSheet != null){
+                        Sheet(booklet.currentSheet).hasChanged = true
+                    }
+                }
+            }
+        }
+    }
+}
+var map<long, Point> touchPoints = {}
+window.onTouchMove = callback(list<TouchPoint> points){
+    var newScrollX = -1
+    var newScrollY = -1
+    var canBeZoomPoint = false
+    var TouchPoint? previousZoomPoint = null
+    var oldTouchPoints = touchPoints.cloneShallow()
+    foreach(points as point){
+        if(point.changed && point.position.x > get_booklet_list_width(window) && point.position.y > get_toolbar_height(window)){
+            if(touchPoints.containsKey(point.identifier)){
+                if(zone == Zone.Canvas || zone == Zone.Sheet){
+                    if(point.toolType == TouchToolType.Stylus){
+                        if(pen == eraser){
+                            if(zone == Zone.Canvas){
+                                $if !legacyUndoRedo{
+                                    ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                                }
+                                booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                            }elseif(zone == Zone.Sheet){
+                                $if !legacyUndoRedo{
+                                    ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                                }
+                                Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                            }
+                        }else{
+                            if(zone == Zone.Canvas){
+                                $if !legacyUndoRedo{
+                                    ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
+                                }
+                                booklet.canvas.drawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+
+                                // automatically resize canvas when drawing near the edge
+                                if((booklet.canvas.width < ((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
+                                    booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                                }
+                            }elseif(zone == Zone.Sheet){
+                                $if !legacyUndoRedo{
+                                    ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, Sheet(booklet.currentSheet).canvas)
+                                }
+                                Sheet(booklet.currentSheet).canvas.drawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                            }
+                        }
+                        hasChanged = true
+                        hasChangedForOnPaint = true
+                        if(booklet.currentSheet != null){
+                            Sheet(booklet.currentSheet).hasChanged = true
+                        }
+                    }else{
+                        if(canBeZoomPoint){
+                            if(math.sqrt(math.pow(double(point.position.x - TouchPoint(previousZoomPoint).position.x), 2) + math.pow(double(point.position.y - TouchPoint(previousZoomPoint).position.y), 2)) > math.sqrt(math.pow(double(oldTouchPoints[point.identifier].x - oldTouchPoints[TouchPoint(previousZoomPoint).identifier].x), 2) + math.pow(double(oldTouchPoints[point.identifier].y - oldTouchPoints[TouchPoint(previousZoomPoint).identifier].y), 2))){
+                                AppState:zoom += 0.01
+                            }else{
+                                AppState:zoom -= 0.01
+                            }
+                            if(AppState:zoom < 0.2){
+                                AppState:zoom = 0.2
+                            }
+                            if(AppState:zoom > 5){
+                                AppState:zoom = 5
+                            }
+                        }
+                        if(zone == Zone.Canvas){
+                            newScrollX = int(math.max(math.min(AppState:scrollX + double(oldTouchPoints[point.identifier].x - point.position.x) / AppState:zoom, double(booklet.canvas.width - window.width / AppState:zoom + get_booklet_list_width(window))), 0))
+                            newScrollY = int(math.max(math.min(AppState:scrollY + double(oldTouchPoints[point.identifier].y - point.position.y) / AppState:zoom, double(booklet.canvas.height - window.height / AppState:zoom + get_toolbar_height(window))), 0))
+                        }elseif(zone == Zone.Sheet){
+                            newScrollX = int(math.max(math.min(AppState:scrollX + double(oldTouchPoints[point.identifier].x - point.position.x) / AppState:zoom, double(Sheet(booklet.currentSheet).canvas.width - window.width / AppState:zoom + get_booklet_list_width(window))), 0))
+                            var sheetHeight = Sheet(booklet.currentSheet).canvas.height
+                            $if android{
+                                sheetHeight += window.height / 5 // Add a bit of padding at the bottom (otherwise one may accidentally click on the home button)
+                            }
+                            newScrollY = int(math.max(math.min(AppState:scrollY + double(oldTouchPoints[point.identifier].y - point.position.y) / AppState:zoom, double(sheetHeight - window.height / AppState:zoom + get_toolbar_height(window))), 0))
+                        }
+                        canBeZoomPoint = true
+                        previousZoomPoint = point
+                    }
+                }elseif(zone == Zone.SheetCollection){
+                    if(point.toolType != TouchToolType.Stylus){
+                        newScrollY = int(math.max(math.min(AppState:scrollY + double(touchPoints[point.identifier].y - point.position.y) / AppState:zoom, double(sheetCollectionHeight - window.height + get_toolbar_height(window))), 0))
+                    }
+                }elseif(zone == Zone.SheetImporter){
+                    if(point.toolType != TouchToolType.Stylus){
+                        newScrollY = int(math.max(math.min(AppState:scrollY + double(touchPoints[point.identifier].y - point.position.y) / AppState:zoom, double(sheetImporterHeight - window.height + get_toolbar_height(window))), 0))
+                    }
+                }
+            }
+            touchPoints[point.identifier] = point.position
+        }
+    }
+    if(newScrollX != -1){
+        AppState:scrollX = newScrollX
+        if(zone == Zone.Canvas){
+            booklet.scrollX = AppState:scrollX
+            hasScrollChanged = true
+        }
+    }
+    if(newScrollY != -1){
+        AppState:scrollY = newScrollY
+        if(zone == Zone.Canvas){
+            booklet.scrollY = AppState:scrollY
+            hasScrollChanged = true
+        }
+    }
+}
+window.onTouchUp = callback(list<TouchPoint> points){
+    foreach(points as point){
+        if(point.changed){
+            if(point.position.x > get_booklet_list_width(window) && point.position.y > get_toolbar_height(window)){
+                if(touchPoints.containsKey(point.identifier)){
+                    touchPoints.remove(point.identifier)
+                }
+            }elseif(point.position.x <= get_booklet_list_width(window) && point.position.y >= get_toolbar_height(window)){
+                var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 30d, 10d))).asUnderlined()
+                var y = int(graphics.measure_text_size("Booklets", font).height * 3) + get_toolbar_height(window)
+                font = font.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 70d, 7d)))
+                var int i = 0
+                foreach(booklets as b){
+                    var name = b.name
+                    if(b == booklet){
+                        name += " [x]"
+                    }
+                    var size = graphics.measure_text_size(name, font)
+                    var height = int(size.height)
+                    if(point.position.x <= get_booklet_list_width(window) && point.position.y >= y - height * 1.5 && point.position.y <= y){
+                        booklet.unprepare()
+                        booklet = b
+                        booklet.prepare()
+                        if(undoList.length > 0){
+                            undoList.clear()
+                            hasUndoAvailabilityChanged = true
+                        }        
+                        if(redoList.length > 0){
+                            redoList.clear()
+                            hasRedoAvailabilityChanged = true
+                        }
+                        AppState:scrollX = booklet.scrollX
+                        AppState:scrollY = booklet.scrollY
+                        AppState:zoom = 1
+                        zone = Zone.Canvas
+                        hasChanged = true
+                        hasChangedForOnPaint = true
+                        hasSizeChanged = true
+                        hasSizeChangedForOnPaint = true
+                    }
+                    y += int(bookletIcon.height * 1.2)
+                    i++
+                }
+            }else{
+                var i = 0
+                foreach(pens as p){
+                    var penIcon = penIcons[i]
+                    penIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+                    if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2 + penIcon.width && point.position.y > get_toolbar_height(window) / 2f - penIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - penIcon.height / 2 + penIcon.height){
+                        pen = p
+                    }
+                    i++
+                }
+                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2 + eraserIcon.width && point.position.y > get_toolbar_height(window) / 2f - eraserIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - eraserIcon.height / 2 + eraserIcon.height){
+                    pen = eraser
+                }
+                i++
+                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2 + undoIcon.width && point.position.y > get_toolbar_height(window) / 2f - undoIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - undoIcon.height / 2 + undoIcon.height){
+                    if(zone == Zone.Canvas || zone == Zone.Sheet){
+                        if(undoList.length > 0){
+                            if(redoList.length == 0){
+                                hasRedoAvailabilityChanged = true
+                            }
+                            if(zone == Zone.Canvas){
+                                $if legacyUndoRedo{
+                                    redoList.add(booklet.canvas.copy())
+                                    booklet.canvas = ChunkedCanvas(undoList[undoList.length - 1])
+                                }$else{
+                                    redoList.add(ImageDiff(undoList[undoList.length - 1]).apply(booklet.canvas))
+                                }
+                            }elseif(zone == Zone.Sheet){
+                                $if legacyUndoRedo{
+                                    redoList.add(Sheet(booklet.currentSheet).canvas.copy())
+                                    Sheet(booklet.currentSheet).canvas = Canvas(undoList[undoList.length - 1])
+                                }$else{
+                                    redoList.add(ImageDiff(undoList[undoList.length - 1]).apply(Sheet(booklet.currentSheet).canvas))
+                                }
+                            }
+                            undoList.removeAt(undoList.length - 1)
+                            if(undoList.length == 0){
+                                hasUndoAvailabilityChanged = true
+                            }
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            if(booklet.currentSheet != null){
+                                Sheet(booklet.currentSheet).hasChanged = true
+                            }
+                        }
+                    }
+                }
+                i++
+                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - redoIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - redoIcon.width / 2 + redoIcon.width && point.position.y > get_toolbar_height(window) / 2f - redoIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - redoIcon.height / 2 + redoIcon.height){
+                    if(zone == Zone.Canvas || zone == Zone.Sheet){
+                        if(redoList.length > 0){
+                            if(undoList.length == 0){
+                                hasUndoAvailabilityChanged = true
+                            }
+                            if(zone == Zone.Canvas){
+                                $if legacyUndoRedo{
+                                    undoList.add(booklet.canvas.copy())
+                                    booklet.canvas = ChunkedCanvas(redoList[redoList.length - 1])
+                                }$else{
+                                    undoList.add(ImageDiff(redoList[redoList.length - 1]).apply(booklet.canvas))
+                                }
+                            }elseif(zone == Zone.Sheet){
+                                $if legacyUndoRedo{
+                                    undoList.add(Sheet(booklet.currentSheet).canvas.copy())
+                                    Sheet(booklet.currentSheet).canvas = Canvas(redoList[redoList.length - 1])
+                                }$else{
+                                    undoList.add(ImageDiff(redoList[redoList.length - 1]).apply(Sheet(booklet.currentSheet).canvas))
+                                }
+                            }
+                            redoList.removeAt(redoList.length - 1)
+                            if(redoList.length == 0){
+                                hasRedoAvailabilityChanged = true
+                            }
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            if(booklet.currentSheet != null){
+                                Sheet(booklet.currentSheet).hasChanged = true
+                            }
+                        }
+                    }
+                }
+                i++
+                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - imageImporterIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - imageImporterIcon.width / 2 + imageImporterIcon.width && point.position.y > get_toolbar_height(window) / 2f - imageImporterIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - imageImporterIcon.height / 2 + imageImporterIcon.height){
+                    if(zone == Zone.SheetCollection){
+                        zone = Zone.Canvas
+                    }else{
+                        zone = Zone.SheetCollection
+                    }
+                    if(zone == Zone.Canvas){
+                        AppState:scrollX = booklet.scrollX
+                        AppState:scrollY = booklet.scrollY
+                    }else{
+                        AppState:scrollX = 0
+                        AppState:scrollY = 0
+                    }
+                    AppState:zoom = 1
+                    if(undoList.length > 0){
+                        undoList.clear()
+                        hasUndoAvailabilityChanged = true
+                    }
+                    if(redoList.length > 0){
+                        redoList.clear()
+                        hasRedoAvailabilityChanged = true
+                    }
+                    hasChangedForOnPaint = true
+                }
+                i++
+                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2 + themeSwitchIcon.width && point.position.y > get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 + themeSwitchIcon.height){
+                    if(theme == Theme.Light){
+                        theme = Theme.Dark
+                        hasThemeChanged = true
+                        hasThemeChangedForOnPaint = true
+                    }else{
+                        theme = Theme.Light
+                        hasThemeChanged = true
+                        hasThemeChangedForOnPaint = true
+                    }
+                }
+            }
+            if(zone == Zone.SheetCollection){
+                var int i = 0
+                foreach(sheetCollectionBounds as b){
+                    if(point.position.x >= b.position.x && point.position.x <= b.position.x + b.size.width && point.position.y >= b.position.y && point.position.y <= b.position.y + b.size.height){
+                        if(i == 0){
+                            zone = Zone.SheetImporter
+                            $if android{
+                                sheetImporterPath = "/storage/emulated/0"
+                            }$else{
+                                sheetImporterPath = io.get_home_directory()
+                            }
+                            booklet.currentSheet = null
+                            AppState:scrollX = 0
+                            AppState:scrollY = 0
+                            AppState:zoom = 1
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            hasSizeChanged = true
+                            hasSizeChangedForOnPaint = true
+                        }else{
+                            zone = Zone.Sheet
+                            booklet.currentSheet = booklet.sheets[i - 1]
+                            AppState:scrollX = 0
+                            AppState:scrollY = 0
+                            AppState:zoom = 1
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            hasSizeChanged = true
+                            hasSizeChangedForOnPaint = true
+                        }
+                    }
+                    i++
+                }
+            }elseif(zone == Zone.SheetImporter){
+                var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 7d)))
+                var color = new Color(255, 0, 0, 0)
+                if(theme == Theme.Dark){
+                    color = new Color(255, 255, 255, 255)
+                }
+                var ls = utils.ls(sheetImporterPath, [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".hdr"])
+                var i = 0
+                var factor = 20 // TODO: Do not hardcode this
+                $if android{
+                    factor = 40
+                }
+                var y = factor + get_toolbar_height(window) - AppState:scrollY
+                foreach(ls as s){
+                    var size = graphics.measure_text_size(s, font)
+                    var width = int(size.width)
+                    var height = int(size.height)
+                    if(point.position.x >= window.width / 2 - width / 2 && point.position.x <= window.width / 2 + width / 2 && point.position.y >= y && point.position.y <= y + height){
+                        if(io.exists_directory(io.join_path([sheetImporterPath, s]))){
+                            if(s == ".."){
+                                sheetImporterPath = sheetImporterPath.reverse().split("/", 2)[1].reverse()
+                                $if android{
+                                    if(sheetImporterPath == "/storage/emulated"){
+                                        sheetImporterPath = "/storage/emulated/0"
+                                    }
+                                }
+                            }else{
+                                sheetImporterPath = io.join_path([sheetImporterPath, s])
+                            }
+                            AppState:scrollY = 0
+                        }else{
+                            io.write_file_bytes(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s, io.read_file_bytes(io.join_path([sheetImporterPath, s])))
+                            var Sheet sheet = Sheet:fromFile(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s)
+                            booklet.sheets.add(sheet)
+                            booklet.currentSheet = sheet
+                            zone = Zone.Sheet
+                            AppState:scrollX = 0
+                            AppState:scrollY = 0
+                            AppState:zoom = 1
+                            hasChanged = true
+                            hasChangedForOnPaint = true
+                            hasSizeChanged = true
+                            hasSizeChangedForOnPaint = true
+                            sheet.hasChanged = true
+                        }
+                    }
+                    y += factor
+                    i++
+                }
+            }
+        }
+    }
+}
+window.onKeyPress = callback(KeyCode key) {
+    if(key == KeyCode.s){
+        save(booklet, theme, hasChanged, true)
+        hasChanged = false
+        hasScrollChanged = false
+    }
+}
+var logo = new Canvas(1, 1)
+window.onPaint = callback(Canvas c) {
+    if(theme == Theme.Light){
+        c.fill(new Color(255, 255, 255, 255), false) // no blend for performance reasons
+    }else{
+        c.fill(new Color(255, 20, 20, 20), false) // no blend for performance reasons
+    }
+    if(zone == Zone.Canvas){
+        var canv = booklet.canvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(booklet.canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(booklet.canvas.height - AppState:scrollY))))
+        if(theme == Theme.Dark){
+            canv.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+        }
+        canv.resizeScale(AppState:zoom)
+        c.drawImage(canv, get_booklet_list_width(window), get_toolbar_height(window))//, false) // no blend for performance reasons
+    }elseif(zone == Zone.SheetCollection){
+        var y = 10
+        var newSheetIcon = newSheetIconOriginal.copy()
+        if(theme == Theme.Dark){
+            newSheetIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+        }
+        newSheetIcon.resize(int(math.sqrt(double(window.width * window.height)) / 6), int(math.sqrt(double(window.width * window.height)) / 6))
+        c.drawImage(newSheetIcon, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - newSheetIcon.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
+        sheetCollectionBounds = []
+        sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - newSheetIcon.width / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(newSheetIcon.width), float(newSheetIcon.height))))
+        y += newSheetIcon.height + 10
+        foreach(booklet.sheets as sheet){
+            var scaleFactor = math.min(c.width / double(sheet.canvas.width), c.height / double(sheet.canvas.height)) * 0.5
+            var img = sheet.sheetCanvas.copy()
+            img.resize(int(sheet.canvas.width * scaleFactor), int(sheet.canvas.height * scaleFactor))
+            c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
+            img = sheet.canvas.copy()
+            img.resize(int(sheet.canvas.width * scaleFactor), int(sheet.canvas.height * scaleFactor))
+            c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
+            c.drawRectangle(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX) - 1, float(get_toolbar_height(window) + y - AppState:scrollY) - 1), new Size(float(img.width) + 2, float(img.height) + 2)), new Color(255, 0, 0, 0)) // TODO: The rectangle is sometimes off a a bit (1 pixel too wide and the upper left corner is 1 pixel too high)
+            sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(img.width), float(img.height))))
+            y += img.height + 10
+        }
+        sheetCollectionHeight = y
+    }elseif(zone == Zone.Sheet){
+        var sheetCanv = Sheet(booklet.currentSheet).sheetCanvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).sheetCanvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).sheetCanvas.height - AppState:scrollY))))
+        sheetCanv.resizeScale(AppState:zoom)
+        c.drawImage(sheetCanv, get_booklet_list_width(window), get_toolbar_height(window))
+
+        var canv = Sheet(booklet.currentSheet).canvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).canvas.height - AppState:scrollY))))
+        // Do not replace dark ink since we assume sheets always have a white background
+        canv.resizeScale(AppState:zoom)
+        c.drawImage(canv, get_booklet_list_width(window), get_toolbar_height(window))
+    }elseif(zone == Zone.SheetImporter){
+        var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 7d)))
+        var color = new Color(255, 0, 0, 0)
+        if(theme == Theme.Dark){
+            color = new Color(255, 255, 255, 255)
+        }
+        var ls = utils.ls(sheetImporterPath, [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".hdr"])
+        var i = 0
+        var factor = 20 // TODO: Do not hardcode this
+        $if android{
+            factor = 40
+        }
+        if(folderIcon.width == 1 || hasThemeChangedForOnPaint || hasSizeChangedForOnPaint){
+            folderIcon = Canvas:fromFileData($embed("icons/folder.png"))
+            folderIcon.resize(int(factor * 0.8), int(factor * 0.8))
+        }
+        if(imageFileIcon.width == 1 || hasThemeChangedForOnPaint || hasSizeChangedForOnPaint){
+            imageFileIcon = Canvas:fromFileData($embed("icons/image_file.png"))
+            if(theme == Theme.Dark){
+                imageFileIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+            }
+            imageFileIcon.resize(int(factor * 0.8), int(factor * 0.8))
+        }
+        foreach(ls as s){
+            var box = graphics.measure_text_size(s, font)
+            if(io.exists_directory(io.join_path([sheetImporterPath, s]))){
+                c.drawImage(folderIcon, int((c.width / 2) - box.width / 2 - folderIcon.width * 1.5), (i + 1) * factor + get_toolbar_height(window) - AppState:scrollY - int(folderIcon.height / 2 - box.height / 2))
+            }else{
+                c.drawImage(imageFileIcon, int((c.width / 2) - box.width / 2 - imageFileIcon.width * 1.5), (i + 1) * factor + get_toolbar_height(window) - AppState:scrollY - int(imageFileIcon.height / 2 - box.height / 2))
+            }
+            c.drawText(s, c.width / 2, (i + 1) * factor + get_toolbar_height(window) - AppState:scrollY, font, color, HorizontalAlignment.Center, VerticalAlignment.Top)
+            i++
+        }
+        sheetImporterHeight = (i + 1) * factor
+        $if android{
+            sheetImporterHeight += window.height / 5 // Add a bit of padding at the bottom (otherwise one may accidentally click on the home button)
+        }
+    }
+    if(theme == Theme.Light){
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 240, 240, 240), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 240, 240, 240), false) // no blend for performance reasons
+    }elseif(theme == Theme.Dark){
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 24, 20, 28), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 24, 20, 28), false) // no blend for performance reasons
+    }
+
+    var i = 0
+    foreach(pens as p){
+        if(penIcons.length < i + 1){
+            var icon = Canvas:fromFileData(penIconData)
+            var color = p.color
+            if(theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
+                color = new Color(255, 255, 255, 255)
+            }
+            icon.replaceColor(new Color(255, 128, 128, 128), color)
+            icon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+            penIcons.add(icon)
+        }
+        if(hasSizeChangedForOnPaint || hasThemeChangedForOnPaint){
+            var icon = Canvas:fromFileData(penIconData)
+            var color = p.color
+            if(theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
+                color = new Color(255, 255, 255, 255)
+            }
+            icon.replaceColor(new Color(255, 128, 128, 128), color)
+            icon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+            penIcons[i] = icon
+        }
+        var penIcon = penIcons[i]
+        if(p == pen){
+            if(theme == Theme.Light){
+                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), new Color(255, 230, 230, 230))
+            }elseif(theme == Theme.Dark){
+                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), new Color(50, 230, 230, 230))
+            }
+        }
+        c.drawImage(penIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2), int(get_toolbar_height(window) / 2 - penIcon.height / 2))
+        i++
+    }
+    
+    if(hasSizeChangedForOnPaint || eraserIcon.width == 1){
+        eraserIcon = Canvas:fromFileData($embed("icons/eraser.png"))
+        eraserIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+    }
+    if(pen == eraser){
+        if(theme == Theme.Light){
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(eraserIcon.width * 0.75), float(eraserIcon.height * 0.75))), new Color(255, 230, 230, 230))
+        }elseif(theme == Theme.Dark){
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(eraserIcon.width * 0.75), float(eraserIcon.height * 0.75))), new Color(50, 230, 230, 230))
+        }
+    }
+    c.drawImage(eraserIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2), int(get_toolbar_height(window) / 2 - eraserIcon.height / 2))
+
+    if(zone == Zone.Canvas){
+        if(pen == eraser && currentMousePosition != null){
+            if(currentMousePosition.x > get_booklet_list_width(window) && currentMousePosition.y > get_toolbar_height(window)){
+                if(theme == Theme.Light){
+                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(eraser.thickness / 2), float(eraser.thickness / 2))), new Color(128, 230, 230, 230))
+                }elseif(theme == Theme.Dark){
+                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(eraser.thickness / 2), float(eraser.thickness / 2))), new Color(128, 230, 230, 230))
+                }
+            }
+        }
+    }
+
+    i++
+    if(undoIcon.width == 1 || hasSizeChangedForOnPaint || hasThemeChangedForOnPaint || hasUndoAvailabilityChanged){
+        undoIcon = undoIconOriginal.copy()
+        if(undoList.length > 0){
+            if(theme == Theme.Dark){
+                undoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+            }
+        }else{
+            undoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 128, 128, 128))
+        }
+        undoIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+    }
+    if(hasUndoAvailabilityChanged){
+        hasUndoAvailabilityChanged = false
+    }
+    c.drawImage(undoIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2), int(get_toolbar_height(window) / 2 - undoIcon.height / 2))
+    i++
+    if(redoIcon.width == 1 || hasSizeChangedForOnPaint || hasThemeChangedForOnPaint || hasRedoAvailabilityChanged){
+        redoIcon = redoIconOriginal.copy()
+        if(redoList.length > 0){
+            if(theme == Theme.Dark){
+                redoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+            }
+        }else{
+            redoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 128, 128, 128))
+        }
+        redoIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+    }
+    if(hasRedoAvailabilityChanged){
+        hasRedoAvailabilityChanged = false
+    }
+    c.drawImage(redoIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - redoIcon.width / 2), int(get_toolbar_height(window) / 2 - redoIcon.height / 2))
+
+    i++
+    if(imageImporterIcon.width == 1 || hasThemeChangedForOnPaint || hasSizeChangedForOnPaint){
+        imageImporterIcon = Canvas:fromFileData($embed("icons/image_importer.png"))
+        if(theme == Theme.Dark){
+            imageImporterIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+        }
+        imageImporterIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+    }
+    c.drawImage(imageImporterIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - imageImporterIcon.width / 2), int(get_toolbar_height(window) / 2 - imageImporterIcon.height / 2))
+    i++
+
+    if(hasSizeChangedForOnPaint || logo.width == 1){
+        logo = Canvas:fromFileData($embed("logo.png"))
+        logo.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+    }
+    c.drawImage(logo, int(get_booklet_list_width(window) / 2 - logo.width / 2), int(get_toolbar_height(window) / 2 - logo.height / 2))
+
+    if(hasSizeChangedForOnPaint || bookletIcon.width == 1 || hasThemeChanged){
+        bookletIcon = Canvas:fromFileData($embed("icons/booklet.png"))
+        if(theme == Theme.Dark){
+            bookletIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 200, 200, 200))
+        }
+        bookletIcon.resize(int(get_toolbar_height(window) * 0.2), int(get_toolbar_height(window) * 0.2))
+    }
+    var textColor = new Color(255, 0, 0, 0)
+    if(theme == Theme.Dark){
+        textColor = new Color(255, 255, 255, 255)
+    }
+    var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 30d, 10d))).asUnderlined()
+    c.drawText("Booklets", int(get_booklet_list_width(window) / 2), get_toolbar_height(window), font, textColor, HorizontalAlignment.Center, VerticalAlignment.Top)
+    var y = int(graphics.measure_text_size("Booklets", font).height * 3) + get_toolbar_height(window)
+    font = font.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 70d, 7d)))
+    foreach(booklets as b){
+        var name = b.name
+        if(b == booklet){
+            name += " [x]"
+        }
+        c.drawText(name, int(get_booklet_list_width(window) / 10) + bookletIcon.width, y, font, textColor, HorizontalAlignment.Left, VerticalAlignment.Center)
+        var size = graphics.measure_text_size(name, font)
+        var width = int(size.width)
+        var height = int(size.height)
+        // TODO: The below rectangle calculation is implemented badly and based on guessings
+        var scaleFactor = bookletIcon.width / 74f // TODO: Do not hardcode the origin size
+        var w = 30 * scaleFactor
+        var h = 10 * scaleFactor
+        c.fillRectangle(new Rectangle(new Point(get_booklet_list_width(window) / 10 + 22 * scaleFactor, y - height * 2 + bookletIcon.height - 15 * scaleFactor), new Size(w, h)), b.color)
+        c.drawImage(bookletIcon, int(get_booklet_list_width(window) / 10), int(y - height * 2))
+        y += int(bookletIcon.height * 1.2)
+    }
+
+    if(theme == Theme.Dark){
+        if(hasSizeChangedForOnPaint || themeSwitchIcon.width == 1 || hasThemeChangedForOnPaint){
+            themeSwitchIcon = Canvas:fromFileData($embed("icons/sun.png"))
+            themeSwitchIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
+        }
+        c.drawImage(themeSwitchIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2), int(get_toolbar_height(window) / 2 - themeSwitchIcon.height / 2))
+    }else{
+        if(hasSizeChangedForOnPaint || themeSwitchIcon.width == 1 || hasThemeChangedForOnPaint){
+            themeSwitchIcon = Canvas:fromFileData($embed("icons/moon.png"))
+            themeSwitchIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
+        }
+        c.drawImage(themeSwitchIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2), int(get_toolbar_height(window) / 2 - themeSwitchIcon.height / 2))
+    }
+
+    if(hasChangedForOnPaint){
+        hasChangedForOnPaint = false
+    }
+    if(hasSizeChangedForOnPaint){
+        hasSizeChangedForOnPaint = false
+    }
+    if(hasThemeChangedForOnPaint){
+        hasThemeChangedForOnPaint = false
+    }
+
+    if(zone == Zone.Canvas){
+        ScrollbarUtils:renderScrollbars(new Size(float(booklet.canvas.width), float(booklet.canvas.height)), c, window)
+    }elseif(zone == Zone.SheetCollection){
+        ScrollbarUtils:renderScrollbars(new Size(float(c.width - get_booklet_list_width(window)), float(sheetCollectionHeight)), c, window)
+    }elseif(zone == Zone.Sheet){
+        ScrollbarUtils:renderScrollbars(new Size(float(Sheet(booklet.currentSheet).canvas.width), float(Sheet(booklet.currentSheet).canvas.height)), c, window)
+    }elseif(zone == Zone.SheetImporter){
+        ScrollbarUtils:renderScrollbars(new Size(float(c.width - get_booklet_list_width(window)), float(sheetImporterHeight)), c, window)
+    }
+
+    $if showFPS{
+        var fpsColor = new Color(255, 0, 0, 0)
+        if(theme == Theme.Dark){
+            fpsColor = new Color(255, 255, 255, 255)
+        }
+        c.drawText("FPS: " + window.fps, 0, 0, Font:default.withSize(10), fpsColor, HorizontalAlignment.Left, VerticalAlignment.Top)
+    }
+}
+window.onResize = callback(int width, int height) {
+    booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double(width - get_booklet_list_width(window, width, height)))), int(math.max(double(booklet.canvas.height), double(height - get_toolbar_height(window, width, height)))))
+    hasSizeChanged = true
+    hasSizeChangedForOnPaint = true
+}
+$if !noAutoSave{
+    callback(){
+        while(true){
+            if(hasChanged || hasThemeChanged || hasScrollChanged){
+                var hadChanged = hasChanged
+                hasChanged = false
+                hasScrollChanged = false
+                save(booklet, theme, hadChanged)
+            }
+            time.sleep(1)
+        }
+    }.+()
+}
+window.show()
+
+function get_toolbar_height(Window window, int width = -1, int height = -1) returns int{
+    if(width < 0){
+        width = window.width
+    }
+    if(height < 0){
+        height = window.height
+    }
+    return int(math.sqrt(double(width * height)) / 8)
+}
+
+function get_booklet_list_width(Window window, int width = -1, int height = -1) returns int{
+    if(width < 0){
+        width = window.width
+    }
+    if(height < 0){
+        height = window.height
+    }
+    return int(math.sqrt(double(width * height)) / 8)
+}
+
+function get_toolbar_items_count() returns int{
+    return 10 + 2 // + 2 for the logo and the space between the logo and the first item
+}
+
+function save(Booklet booklet, Theme theme, bool hasChanged, bool force = false){
+    if(booklet.loaded){
+        booklet.save(!hasChanged && !force)
+        io.write_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]), booklet.name)
+    }
+    if(theme == Theme.Light){
+        io.write_file(io.join_path([Booklet:getBookletsPath(), "theme.txt"]), "light")
+    }elseif(theme == Theme.Dark){
+        io.write_file(io.join_path([Booklet:getBookletsPath(), "theme.txt"]), "dark")
+    }
+}

@@ -1,0 +1,13 @@
+import graphics
+
+class Pen {
+
+    property Color color
+    property int thickness
+
+    method construct(Color color, int thickness){
+        this.color = color
+        this.thickness = thickness
+    }
+
+}

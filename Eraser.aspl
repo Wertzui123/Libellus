@@ -1,0 +1,9 @@
+class Eraser {
+    
+    property int thickness
+
+    method construct(int thickness){
+        this.thickness = thickness
+    }
+
+}

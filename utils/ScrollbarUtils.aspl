@@ -1,0 +1,84 @@
+import graphics
+import math
+import math.geometry
+
+[static]
+class ScrollbarUtils {
+
+    // TODO: The scrollbars render incorrectly sometimes
+    
+    [static]
+    method renderScrollbars(Size totalBounds, Canvas c, Window window){
+        renderVerticalScrollbar(totalBounds, c, window)
+        renderHorizontalScrollbar(totalBounds, c, window)
+    }
+
+    [static]
+    method renderVerticalScrollbar(Size totalBounds, Canvas c, Window window){
+        var bounds = getVerticalScrollbarBounds(totalBounds, window)
+        if(bounds != null){
+            c.drawRectangle(Rectangle(bounds), new Color(100, 50, 50, 50))
+        }
+        var sliderBounds = getVerticalScrollbarSliderBounds(totalBounds, window)
+        if(sliderBounds != null){
+            c.fillRectangle(sliderBounds, new Color(50, 100, 100, 100))
+        }
+    }
+
+    [static]
+    method renderHorizontalScrollbar(Size totalBounds, Canvas c, Window window){
+        var bounds = getHorizontalScrollbarBounds(totalBounds, window)
+        if(bounds != null){
+            c.drawRectangle(Rectangle(bounds), new Color(100, 50, 50, 50))
+        }
+        var sliderBounds = getHorizontalScrollbarSliderBounds(totalBounds, window)
+        if(sliderBounds != null){
+            c.fillRectangle(sliderBounds, new Color(50, 100, 100, 100))
+        }
+    }
+
+    [static]
+    method getVerticalScrollbarBounds(Size totalBounds, Window window) returns Rectangle?{
+        var h = math.max(0.04, double((window.height - libellus.get_toolbar_height(window)) / (totalBounds.height * AppState:zoom)))
+        if(h < 1){
+            return new Rectangle(new Point(window.width * float(49f/50), float(libellus.get_toolbar_height(window))), new Size(totalBounds.width / 50f, float(window.height - libellus.get_toolbar_height(window))))
+        }else{
+            return null
+        }
+    }
+
+    [static]
+    method getHorizontalScrollbarBounds(Size totalBounds, Window window) returns Rectangle?{
+        var w = math.max(0.04, double((window.width - libellus.get_booklet_list_width(window)) / (totalBounds.width * AppState:zoom)))
+        if(w < 1){
+            return new Rectangle(new Point(float(libellus.get_booklet_list_width(window)), window.height * float(49f/50)), new Size(float(window.width - libellus.get_booklet_list_width(window)), totalBounds.height / 50f))
+        }else{
+            return null
+        }
+    }
+
+    [static]
+    method getVerticalScrollbarSliderBounds(Size totalBounds, Window window) returns Rectangle?{
+        var h = math.max(0.04, double(float(window.height - libellus.get_toolbar_height(window)) / (totalBounds.height * AppState:zoom)))
+        if(h < 1){
+            var bounds = getVerticalScrollbarBounds(totalBounds, window)
+            var y = (window.height - libellus.get_toolbar_height(window)) * float(AppState:scrollY) / (totalBounds.height * AppState:zoom)
+            return new Rectangle(new Point(Rectangle(bounds).position.x, float(libellus.get_toolbar_height(window)) + y), new Size(Rectangle(bounds).size.width, float((window.height - libellus.get_toolbar_height(window)) * h)))
+        }else{
+            return null
+        }
+    }
+
+    [static]
+    method getHorizontalScrollbarSliderBounds(Size totalBounds, Window window) returns Rectangle?{
+        var w = math.max(0.0, double(float(window.width - libellus.get_booklet_list_width(window)) / (totalBounds.width * AppState:zoom)))
+        if(w < 1){
+            var bounds = getHorizontalScrollbarBounds(totalBounds, window)
+            var x = (window.width - libellus.get_booklet_list_width(window)) * float(AppState:scrollX) / (totalBounds.width * AppState:zoom)
+            return new Rectangle(new Point(float(libellus.get_booklet_list_width(window)) + x, Rectangle(bounds).position.y), new Size(float((window.width - libellus.get_booklet_list_width(window)) * w), Rectangle(bounds).size.height))
+        }else{
+            return null
+        }
+    }
+
+}

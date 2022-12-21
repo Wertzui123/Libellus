@@ -1,0 +1,6 @@
+enum Zone {
+    Canvas,
+    SheetCollection,
+    Sheet,
+    SheetImporter
+}

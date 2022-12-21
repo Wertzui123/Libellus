@@ -1,0 +1,23 @@
+import io
+
+function ls(string path, list<string>? extensions = null) returns list<string>{
+    var list<string> elements = [".."]
+    var files = io.files(path) // TODO: We currently need to add the "READ_EXTERNAL_STORAGE" permission to the AndroidManifest.xml AND manually grant it to the app in the settings
+    foreach(files as file){
+        if(extensions != null && list<string>(extensions).length > 0){
+            foreach(extensions as extension){
+                if(file.endsWith(extension)){
+                    elements.add(file)
+                    break
+                }
+            }
+        }else{
+            elements.add(file)
+        }
+    }
+    var dirs = io.directories(path)
+    foreach(dirs as dir){
+        elements.add(dir)
+    }
+    return elements
+}

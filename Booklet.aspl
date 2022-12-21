@@ -1,0 +1,101 @@
+import io
+import graphics
+import json
+
+class Booklet {
+    
+    property string name
+    property Color color
+    property ChunkedCanvas canvas
+    property list<string> sheetFiles
+    property list<Sheet> sheets
+    property Sheet? currentSheet
+    property int scrollX
+    property int scrollY
+    property bool loaded
+
+    method construct(string name, Color color, ChunkedCanvas canvas, list<string> sheetFiles, int scrollX, int scrollY) {
+        this.name = name
+        this.color = color
+        this.canvas = canvas
+        this.sheetFiles = sheetFiles
+        this.scrollX = scrollX
+        this.scrollY = scrollY
+    }
+
+    method prepare(){
+        var folder = io.join_path([self:getBookletsPath(), name])
+        if(io.exists_file(io.join_path([folder, "canvas.cif"]))){
+            canvas = ChunkedCanvas:fromFile(io.join_path([folder, "canvas.cif"]))
+        }
+
+        var list<string> sheetPaths = []
+        foreach(sheetFiles as file){
+            sheets.add(Sheet:fromFile(string(folder) + "/sheets/" + string(file)))
+            sheetPaths.add(string(folder) + "/sheets/" + string(file))
+        }
+        foreach(io.files(string(folder) + "/sheets") as file){
+            if(!file.endsWith(".canvas.png") && !sheetPaths.contains(string(folder) + "/sheets/" + string(file))){
+                sheets.add(Sheet:fromFile(string(folder) + "/sheets/" + string(file)))
+            }
+        }
+        loaded = true
+    }
+
+    // Warning: Save the canvas and the sheets before calling this method!
+    method unprepare(){
+        loaded = false
+        canvas = new ChunkedCanvas(1, 1) // TODO: Use `null` instead
+        sheets = []
+    }
+
+    method save(bool saveOnlyMeta = false){
+        var bookletsPath = self:getBookletsPath()
+        if(!io.exists_directory(bookletsPath)){
+            io.create_directory(bookletsPath)
+        }
+        if(!io.exists_directory(bookletsPath + "/" + name)){
+            io.create_directory(bookletsPath + "/" + name)
+        }
+        var list<any> sheetsMap = []
+        foreach(sheets as sheet){
+            sheetsMap.add(io.file_name(sheet.file))
+        }
+        io.write_file(bookletsPath + "/" + name + "/booklet.json", json.encode(map<string, any>{
+            "color" => map<string, any>{
+                "r" => color.r,
+                "g" => color.g,
+                "b" => color.b,
+                "a" => color.a
+            },
+            "sheets" => sheetsMap,
+            "scroll" => map<string, any>{
+                "x" => scrollX,
+                "y" => scrollY
+            }
+        }))
+        if(!saveOnlyMeta){
+            canvas.save(bookletsPath + "/" + name + "/canvas.cif")
+            if(!io.exists_directory(bookletsPath + "/" + name + "/sheets")){
+                io.create_directory(bookletsPath + "/" + name + "/sheets")
+            }
+            foreach(sheets as sheet){
+                if(sheet.hasChanged){
+                    sheet.hasChanged = false
+                    sheet.save(this)
+                }
+            }
+        }
+    }
+
+    [static]
+    method getBookletsPath() returns string{
+        var bookletsPath = "booklets"
+        $if android{
+            var packageId = "com.wertzui123.libellus"
+            bookletsPath = "/data/data/" + packageId + "/files/booklets"
+        }
+        return bookletsPath
+    }
+
+}

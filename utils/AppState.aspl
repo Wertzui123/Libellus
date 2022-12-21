@@ -1,0 +1,12 @@
+[static]
+class AppState {
+    
+    [static]
+    property int scrollX = 0
+    [static]
+    property int scrollY = 0
+
+    [static]
+    property float zoom = 1
+
+}

@@ -1,0 +1,120 @@
+import graphics
+import math
+import math.geometry
+
+class ImageDiff {
+
+    property map<int, map<int, Color>> previousPixels = {}
+
+    method apply(Canvas|ChunkedCanvas canvas) returns ImageDiff{
+        var map<int, map<int, Color>> newPreviousPixels = {}
+        if(canvas oftype Canvas){
+            foreach(previousPixels as y => row){
+                newPreviousPixels[y] = {}
+                foreach(row as x => color){
+                    newPreviousPixels[y][x] = Canvas(canvas).getPixel(x, y)
+                    Canvas(canvas).setPixel(x, y, color, false)
+                }
+            }
+        }elseif(canvas oftype ChunkedCanvas){
+            foreach(previousPixels as y => row){
+                newPreviousPixels[y] = {}
+                foreach(row as x => color){
+                    newPreviousPixels[y][x] = ChunkedCanvas(canvas).getPixel(x, y)
+                    ChunkedCanvas(canvas).setPixel(x, y, color, false)
+                }
+            }
+        }
+        var newDiff = new ImageDiff()
+        newDiff.previousPixels = newPreviousPixels
+        return newDiff
+    }
+
+    method track(Canvas|ChunkedCanvas canvas, int x, int y){
+        if(!previousPixels.containsKey(y)){
+            previousPixels[y] = {}
+        }
+        if(previousPixels[y].containsKey(x)){
+            return
+        }
+        if(canvas oftype Canvas){
+            previousPixels[y][x] = Canvas(canvas).getPixel(x, y)
+        }elseif(canvas oftype ChunkedCanvas){
+            previousPixels[y][x] = ChunkedCanvas(canvas).getPixel(x, y)
+        }
+    }
+
+    method trackDrawLine(int x1, int y1, int x2, int y2, int thickness, Canvas|ChunkedCanvas canvas){
+        var dx = x2 - x1
+        var dy = y2 - y1
+        var adx = int(math.abs(double(dx)))
+        var ady = int(math.abs(double(dy)))
+        var sx = 0
+        if(dx > 0) {
+            sx = 1
+        } else {
+            sx = -1
+        }
+        var sy = 0
+        if(dy > 0) {
+            sy = 1
+        } else {
+            sy = -1
+        }
+        var err = adx - ady
+        var e2 = 0
+        var x = x1
+        var y = y1
+
+        while(true) {
+            repeat(thickness, i = 0) {
+                track(canvas, x, y + i)
+                track(canvas, x, y - i)
+                track(canvas, x + i, y)
+                track(canvas, x - i, y)
+            }
+
+            if(x == x2 && y == y2) {
+                break
+            }
+
+            e2 = 2 * err
+            if(e2 > -ady) {
+                err -= ady
+                x += sx
+            }
+            if(e2 < adx) {
+                err += adx
+                y += sy
+            }
+        }
+    }
+
+    method trackFillCircle(Ellipse circle, Canvas|ChunkedCanvas canvas){
+        var i = -int(circle.size.width)
+        while(i < int(circle.size.width)) {
+            var j = -int(circle.size.height)
+            while(j < int(circle.size.height)) {
+                if((i * i + j * j) < (circle.size.width * circle.size.width)) {
+                    track(canvas, int(circle.position.x + i), int(circle.position.y + j))
+                }
+                j++
+            }
+            i++
+        }
+    }
+
+    // TODO: Remove this method; it is currently here for performance reasons because trackFillCircle is too slow
+    method trackFillCircleRectangular(Ellipse circle, Canvas|ChunkedCanvas canvas){
+        var i = -int(circle.size.width)
+        while(i < int(circle.size.width)) {
+            var j = -int(circle.size.height)
+            while(j < int(circle.size.height)) {
+                track(canvas, int(circle.position.x + i), int(circle.position.y + j))
+                j++
+            }
+            i++
+        }
+    }
+
+}

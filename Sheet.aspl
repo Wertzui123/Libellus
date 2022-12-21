@@ -1,0 +1,35 @@
+import graphics
+
+class Sheet {
+    
+    property string name
+    property string file
+    property Canvas sheetCanvas
+    property Canvas canvas
+    property bool hasChanged
+
+    method construct(string name, string file, Canvas sheetCanvas, Canvas canvas) {
+        this.name = name
+        this.file = file
+        this.sheetCanvas = sheetCanvas
+        this.canvas = canvas
+    }
+
+    [static]
+    method fromFile(string file) returns Sheet{
+        var sheetCanvas = Canvas:fromFile(file)
+        var canvasFile = file.reverse().split(".", 2)[1].reverse() + ".canvas.png"
+        if(!io.exists_file(canvasFile)) {
+            var canvas = new Canvas(sheetCanvas.width, sheetCanvas.height)
+            canvas.save(canvasFile)
+        }
+        var canvas = Canvas:fromFile(canvasFile)
+        var name = file.reverse().split("/", 2)[0].split(".", 2)[1].reverse()
+        return new self(name, file, sheetCanvas, canvas)
+    }
+
+    method save(Booklet booklet) {
+        canvas.save(file.reverse().split(".", 2)[1].reverse() + ".canvas.png")
+    }
+
+}
