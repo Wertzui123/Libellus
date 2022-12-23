@@ -1030,21 +1030,25 @@ window.onPaint = callback(Canvas c) {
         y += newSheetIcon.height + 10
         foreach(booklet.sheets as sheet){
             var scaleFactor = math.min(c.width / double(sheet.canvas.width), c.height / double(sheet.canvas.height)) * 0.5
-            var img = sheet.sheetCanvas.copy()
-            img.resize(int(sheet.canvas.width * scaleFactor), int(sheet.canvas.height * scaleFactor))
-            c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
-            img = sheet.canvas.copy()
-            img.resize(int(sheet.canvas.width * scaleFactor), int(sheet.canvas.height * scaleFactor))
-            c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
-            c.drawRectangle(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX) - 1, float(get_toolbar_height(window) + y - AppState:scrollY) - 1), new Size(float(img.width) + 2, float(img.height) + 2)), new Color(255, 0, 0, 0)) // TODO: The rectangle is sometimes off a a bit (1 pixel too wide and the upper left corner is 1 pixel too high)
-            sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(img.width), float(img.height))))
-            y += img.height + 10
+            var imgWidth = int(sheet.canvas.width * scaleFactor)
+            var imgHeight = int(sheet.canvas.height * scaleFactor)
+            if((get_toolbar_height(window) + y - AppState:scrollY + imgHeight >= 0) && (get_toolbar_height(window) + y - AppState:scrollY < c.height)){
+                var img = sheet.sheetCanvas.copy()
+                img.resize(imgWidth, imgHeight)
+                c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY, false) // no blend for performance reasons
+                img = sheet.canvas.copy()
+                img.resize(imgWidth, imgHeight)
+                c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
+                c.drawRectangle(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX) - 1, float(get_toolbar_height(window) + y - AppState:scrollY) - 1), new Size(float(img.width) + 2, float(img.height) + 2)), new Color(255, 0, 0, 0)) // TODO: The rectangle is sometimes off a a bit (1 pixel too wide and the upper left corner is 1 pixel too high)
+            }
+            sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - imgWidth / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(imgWidth), float(imgHeight))))
+            y += imgHeight + 10
         }
         sheetCollectionHeight = y
     }elseif(zone == Zone.Sheet){
         var sheetCanv = Sheet(booklet.currentSheet).sheetCanvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).sheetCanvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).sheetCanvas.height - AppState:scrollY))))
         sheetCanv.resizeScale(AppState:zoom)
-        c.drawImage(sheetCanv, get_booklet_list_width(window), get_toolbar_height(window))
+        c.drawImage(sheetCanv, get_booklet_list_width(window), get_toolbar_height(window), false) // no blend for performance reasons
 
         var canv = Sheet(booklet.currentSheet).canvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).canvas.height - AppState:scrollY))))
         // Do not replace dark ink since we assume sheets always have a white background
@@ -1227,14 +1231,12 @@ window.onPaint = callback(Canvas c) {
         }
         c.drawText(name, int(get_booklet_list_width(window) / 10) + bookletIcon.width, y, font, textColor, HorizontalAlignment.Left, VerticalAlignment.Center)
         var size = graphics.measure_text_size(name, font)
-        var width = int(size.width)
-        var height = int(size.height)
         // TODO: The below rectangle calculation is implemented badly and based on guessings
         var scaleFactor = bookletIcon.width / 74f // TODO: Do not hardcode the origin size
         var w = 30 * scaleFactor
         var h = 10 * scaleFactor
-        c.fillRectangle(new Rectangle(new Point(get_booklet_list_width(window) / 10 + 22 * scaleFactor, y - height * 2 + bookletIcon.height - 15 * scaleFactor), new Size(w, h)), b.color)
-        c.drawImage(bookletIcon, int(get_booklet_list_width(window) / 10), int(y - height * 2))
+        c.fillRectangle(new Rectangle(new Point(get_booklet_list_width(window) / 10 + 22 * scaleFactor, y - size.height * 2 + bookletIcon.height - 15 * scaleFactor), new Size(w, h)), b.color)
+        c.drawImage(bookletIcon, int(get_booklet_list_width(window) / 10), int(y - size.height * 2))
         y += int(bookletIcon.height * 1.2)
     }
 
