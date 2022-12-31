@@ -1093,11 +1093,11 @@ window.onPaint = callback(Canvas c) {
         }
     }
     if(theme == Theme.Light){
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 240, 240, 240), false) // no blend for performance reasons
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 240, 240, 240), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 230, 230, 234), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 230, 230, 234), false) // no blend for performance reasons
     }elseif(theme == Theme.Dark){
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 24, 20, 28), false) // no blend for performance reasons
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 24, 20, 28), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 26, 22, 30), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 26, 22, 30), false) // no blend for performance reasons
     }
 
     var i = 0
@@ -1125,7 +1125,7 @@ window.onPaint = callback(Canvas c) {
         var penIcon = penIcons[i]
         if(p == pen){
             if(theme == Theme.Light){
-                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), new Color(255, 230, 230, 230))
+                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), new Color(255, 210, 210, 210))
             }elseif(theme == Theme.Dark){
                 c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), new Color(50, 230, 230, 230))
             }
@@ -1140,7 +1140,7 @@ window.onPaint = callback(Canvas c) {
     }
     if(pen == eraser){
         if(theme == Theme.Light){
-            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(eraserIcon.width * 0.75), float(eraserIcon.height * 0.75))), new Color(255, 230, 230, 230))
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(eraserIcon.width * 0.75), float(eraserIcon.height * 0.75))), new Color(255, 210, 210, 210))
         }elseif(theme == Theme.Dark){
             c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(eraserIcon.width * 0.75), float(eraserIcon.height * 0.75))), new Color(50, 230, 230, 230))
         }
@@ -1151,7 +1151,7 @@ window.onPaint = callback(Canvas c) {
         if(pen == eraser && currentMousePosition != null){
             if(currentMousePosition.x > get_booklet_list_width(window) && currentMousePosition.y > get_toolbar_height(window)){
                 if(theme == Theme.Light){
-                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(eraser.thickness / 2), float(eraser.thickness / 2))), new Color(128, 230, 230, 230))
+                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(eraser.thickness / 2), float(eraser.thickness / 2))), new Color(128, 210, 210, 210))
                 }elseif(theme == Theme.Dark){
                     c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(eraser.thickness / 2), float(eraser.thickness / 2))), new Color(128, 230, 230, 230))
                 }
@@ -1209,7 +1209,7 @@ window.onPaint = callback(Canvas c) {
     }
     c.drawImage(logo, int(get_booklet_list_width(window) / 2 - logo.width / 2), int(get_toolbar_height(window) / 2 - logo.height / 2))
 
-    if(hasSizeChangedForOnPaint || bookletIcon.width == 1 || hasThemeChanged){
+    if(hasSizeChangedForOnPaint || bookletIcon.width == 1 || hasThemeChangedForOnPaint){
         bookletIcon = Canvas:fromFileData($embed("icons/booklet.png"))
         if(theme == Theme.Dark){
             bookletIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 200, 200, 200))
