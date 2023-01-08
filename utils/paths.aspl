@@ -1,0 +1,67 @@
+import graphics
+
+function clear_path(Canvas|ChunkedCanvas canvas, int x, int y, ImageDiff? diff = null){
+    var none = new Color(0, 0, 0, 0)
+    var red = new Color(255, 255, 0, 0)
+    var color = none
+    if(canvas oftype Canvas){
+        color = Canvas(canvas).getPixel(x, y)
+    }elseif(canvas oftype ChunkedCanvas){
+        color = ChunkedCanvas(canvas).getPixel(x, y)
+    }
+    if(color.a == none.a && color.r == none.r && color.g == none.g && color.b == none.b){
+        return
+    }
+    var map<int, list<int>> handled = {}
+    var list<list<int>> toHandle = [[x, y]]
+    while(toHandle.length > 0){
+        var list<int> pos = toHandle[toHandle.length - 1]
+        toHandle.removeAt(toHandle.length - 1)
+        if(!handled.containsKey(pos[0])){
+            handled[pos[0]] = []
+        }
+        if(!handled[pos[0]].contains(pos[1])){
+            handled[pos[0]].add(pos[1])
+            var pixel = none
+            if(canvas oftype Canvas){
+                pixel = Canvas(canvas).getPixel(pos[0], pos[1])
+            }elseif(canvas oftype ChunkedCanvas){
+                pixel = ChunkedCanvas(canvas).getPixel(pos[0], pos[1])
+            }
+            if(pixel.a == color.a && pixel.r == color.r && pixel.g == color.g && pixel.b == color.b){
+                if(diff != null){
+                    ImageDiff(diff).track(canvas, pos[0], pos[1])
+                }
+                if(canvas oftype Canvas){
+                    Canvas(canvas).setPixel(pos[0], pos[1], none, false)
+                }elseif(canvas oftype ChunkedCanvas){
+                    ChunkedCanvas(canvas).setPixel(pos[0], pos[1], none, false)
+                }
+                if(canvas oftype Canvas){
+                    if(pos[0] + 1 < Canvas(canvas).width){
+                        toHandle.add([pos[0] + 1, pos[1]])
+                    }
+                }elseif(canvas oftype ChunkedCanvas){
+                    if(pos[0] + 1 < ChunkedCanvas(canvas).width){
+                        toHandle.add([pos[0] + 1, pos[1]])
+                    }
+                }
+                if(pos[0] - 1 >= 0){
+                    toHandle.add([pos[0] - 1, pos[1]])
+                }
+                if(canvas oftype Canvas){
+                    if(pos[1] + 1 < Canvas(canvas).height){
+                        toHandle.add([pos[0], pos[1] + 1])
+                    }
+                }elseif(canvas oftype ChunkedCanvas){
+                    if(pos[1] + 1 < ChunkedCanvas(canvas).height){
+                        toHandle.add([pos[0], pos[1] + 1])
+                    }
+                }
+                if(pos[1] - 1 >= 0){
+                    toHandle.add([pos[0], pos[1] - 1])
+                }
+            }
+        }
+    }
+}

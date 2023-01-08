@@ -1,4 +1,4 @@
-class Eraser {
+class CircularEraser {
     
     property int thickness
 

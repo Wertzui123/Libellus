@@ -111,11 +111,13 @@ if(booklets.length == 0 || !hasAnySelected){
     booklets.add(booklet)
 }
 var pens = [new Pen(new Color(255, 0, 0, 0), 2), new Pen(new Color(255, 255, 0, 0), 2), new Pen(new Color(255, 0, 255, 0), 2), new Pen(new Color(255, 0, 0, 255), 2), new Pen(new Color(255, 255, 255, 0), 2)]
-var Pen|Eraser pen = pens[0]
-var eraser = new Eraser(30)
+var Pen|CircularEraser|PathEraser pen = pens[0]
+var circularEraser = new CircularEraser(30)
+var pathEraser = new PathEraser()
 var list<Canvas> penIcons = []
 var penIconData = $embed("icons/pen.png")
-var eraserIcon = new Canvas(1, 1)
+var circularEraserIcon = new Canvas(1, 1)
+var pathEraserIcon = new Canvas(1, 1)
 var themeSwitchIcon = new Canvas(1, 1)
 var undoIconOriginal = Canvas:fromFileData($embed("icons/undo.png"))
 var redoIconOriginal = Canvas:fromFileData($embed("icons/redo.png"))
@@ -155,6 +157,7 @@ var hasRedoAvailabilityChanged = false
 var isMouseDown = false
 var zone = Zone.Canvas
 var sheetImporterPath = ""
+var hasPushedUndoDiff = false
 window.onMouseDown = callback(Point position, MouseButton button) {
     if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
         if (button == MouseButton.Left){
@@ -171,13 +174,35 @@ window.onMouseDown = callback(Point position, MouseButton button) {
                         }
                         undoList.add(booklet.canvas.copy())
                     }$else{
-                        undoList.add(new ImageDiff())
+                        if(pen == pathEraser){
+                            var pixel = booklet.canvas.getPixel(int(position.x - get_booklet_list_width(window) + AppState:scrollX), int(position.y - get_toolbar_height(window) + AppState:scrollY))
+                            if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                undoList.add(new ImageDiff())
+                                hasPushedUndoDiff = true
+                            }else{
+                                hasPushedUndoDiff = false
+                            }
+                        }else{
+                            undoList.add(new ImageDiff())
+                            hasPushedUndoDiff = true
+                        }
                     }
                 }elseif(zone == Zone.Sheet){
                     $if legacyUndoRedo{
                         undoList.add(Sheet(booklet.currentSheet).canvas.copy())
                     }$else{
-                        undoList.add(new ImageDiff())
+                        if(pen == pathEraser){
+                            var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int(position.x - get_booklet_list_width(window) + AppState:scrollX), int(position.y - get_toolbar_height(window) + AppState:scrollY))
+                            if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                undoList.add(new ImageDiff())
+                                hasPushedUndoDiff = true
+                            }else{
+                                hasPushedUndoDiff = false
+                            }
+                        }else{
+                            undoList.add(new ImageDiff())
+                            hasPushedUndoDiff = true
+                        }
                     }
                 }
                 if(undoList.length > UNDO_REDO_LIMIT){
@@ -187,17 +212,29 @@ window.onMouseDown = callback(Point position, MouseButton button) {
                     redoList.clear()
                     hasRedoAvailabilityChanged = true
                 }
-                if(pen == eraser){
+                if(pen == circularEraser){
                     if(zone == Zone.Canvas){
                         $if !legacyUndoRedo{
-                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), booklet.canvas)
                         }
-                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
                     }elseif(zone == Zone.Sheet){
                         $if !legacyUndoRedo{
-                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
                         }
-                        Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                    }
+                }elseif(pen == pathEraser){
+                    if(zone == Zone.Canvas){
+                        var pixel = booklet.canvas.getPixel(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
+                        if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                            utils.clear_path(booklet.canvas, int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                        }
+                    }elseif(zone == Zone.Sheet){
+                        var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
+                        if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                            utils.clear_path(Sheet(booklet.currentSheet).canvas, int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                        }
                     }
                 }else{
                     if(zone == Zone.Canvas){
@@ -239,19 +276,45 @@ window.onMouseMove = callback(Point position, float deltaX, float deltaY) {
     if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
         if (isMouseDown) {
             if(zone == Zone.Canvas || zone == Zone.Sheet){
-                if(pen == eraser){
+                if(pen == circularEraser){
                     if(zone == Zone.Canvas){
                         $if !legacyUndoRedo{
-                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), booklet.canvas)
                         }
-                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
                     }elseif(zone == Zone.Sheet){
                         $if !legacyUndoRedo{
-                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                            ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
                         }
-                        Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
                     }
-                }else{
+                }elseif(pen == pathEraser){
+                    if(zone == Zone.Canvas){
+                        var pixel = booklet.canvas.getPixel(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
+                        if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                            $if !legacyUndoRedo{
+                                if(!hasPushedUndoDiff){
+                                    undoList.add(new ImageDiff())
+                                    hasPushedUndoDiff = true
+                                    hasUndoAvailabilityChanged = true
+                                }
+                            }
+                            utils.clear_path(booklet.canvas, int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                        }
+                    }elseif(zone == Zone.Sheet){
+                        var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
+                        if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                            $if !legacyUndoRedo{
+                                if(!hasPushedUndoDiff){
+                                    undoList.add(new ImageDiff())
+                                    hasPushedUndoDiff = true
+                                    hasUndoAvailabilityChanged = true
+                                }
+                            }
+                            utils.clear_path(Sheet(booklet.currentSheet).canvas, int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                        }
+                    }
+                }elseif(pen oftype Pen){
                     if(zone == Zone.Canvas){
                         $if !legacyUndoRedo{
                             ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
@@ -286,8 +349,12 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                 }
                 i++
             }
-            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width && position.y > get_toolbar_height(window) / 2f - eraserIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - eraserIcon.height / 2 + eraserIcon.height){
-                pen = eraser
+            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) + circularEraserIcon.width && position.y > get_toolbar_height(window) / 2f - circularEraserIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - circularEraserIcon.height / 2 + circularEraserIcon.height){
+                pen = circularEraser
+            }
+            i++
+            if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) + pathEraserIcon.width && position.y > get_toolbar_height(window) / 2f - pathEraserIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - pathEraserIcon.height / 2 + pathEraserIcon.height){
+                pen = pathEraser
             }
             i++
             if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2) + undoIcon.width && position.y > get_toolbar_height(window) / 2f - undoIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - undoIcon.height / 2 + undoIcon.height){
@@ -589,13 +656,35 @@ window.onTouchDown = callback(list<TouchPoint> points){
                             }
                             undoList.add(booklet.canvas.copy())
                         }$else{
-                            undoList.add(new ImageDiff())
+                            if(pen == pathEraser){
+                                var pixel = booklet.canvas.getPixel(int((point.position.x - get_booklet_list_width(window) + AppState:scrollX) / AppState:zoom), int((point.position.y - get_toolbar_height(window) + AppState:scrollY) / AppState:zoom))
+                                if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                    undoList.add(new ImageDiff())
+                                    hasPushedUndoDiff = true
+                                }else{
+                                    hasPushedUndoDiff = false
+                                }
+                            }else{
+                                undoList.add(new ImageDiff())
+                                hasPushedUndoDiff = true
+                            }
                         }
                     }elseif(zone == Zone.Sheet){
                         $if legacyUndoRedo{
                             undoList.add(Sheet(booklet.currentSheet).canvas.copy())
                         }$else{
-                            undoList.add(new ImageDiff())
+                            if(pen == pathEraser){
+                                var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((point.position.x - get_booklet_list_width(window) + AppState:scrollX) / AppState:zoom), int((point.position.y - get_toolbar_height(window) + AppState:scrollY) / AppState:zoom))
+                                if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                    undoList.add(new ImageDiff())
+                                    hasPushedUndoDiff = true
+                                }else{
+                                    hasPushedUndoDiff = false
+                                }
+                            }else{
+                                undoList.add(new ImageDiff())
+                                hasPushedUndoDiff = true
+                            }
                         }
                     }
                     if(undoList.length > UNDO_REDO_LIMIT){
@@ -605,17 +694,29 @@ window.onTouchDown = callback(list<TouchPoint> points){
                         redoList.clear()
                         hasRedoAvailabilityChanged = true
                     }
-                    if(pen == eraser){
+                    if(pen == circularEraser){
                         if(zone == Zone.Canvas){
                             $if !legacyUndoRedo{
-                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), booklet.canvas)
                             }
-                            booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                            booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
                         }elseif(zone == Zone.Sheet){
                             $if !legacyUndoRedo{
-                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                                ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
                             }
-                            Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                            Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        }
+                    }elseif(pen == pathEraser){
+                        if(zone == Zone.Canvas){
+                            var pixel = booklet.canvas.getPixel(int((point.position.x - get_booklet_list_width(window) + AppState:scrollX) / AppState:zoom), int((point.position.y - get_toolbar_height(window) + AppState:scrollY) / AppState:zoom))
+                            if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                utils.clear_path(booklet.canvas, int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                            }
+                        }elseif(zone == Zone.Sheet){
+                            var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((point.position.x - get_booklet_list_width(window) + AppState:scrollX) / AppState:zoom), int((point.position.y - get_toolbar_height(window) + AppState:scrollY) / AppState:zoom))
+                            if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                utils.clear_path(Sheet(booklet.currentSheet).canvas, int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                            }
                         }
                     }else{
                         if(zone == Zone.Canvas){
@@ -657,19 +758,45 @@ window.onTouchMove = callback(list<TouchPoint> points){
             if(touchPoints.containsKey(point.identifier)){
                 if(zone == Zone.Canvas || zone == Zone.Sheet){
                     if(point.toolType == TouchToolType.Stylus){
-                        if(pen == eraser){
+                        if(pen == circularEraser){
                             if(zone == Zone.Canvas){
                                 $if !legacyUndoRedo{
-                                    ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), booklet.canvas)
+                                    ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), booklet.canvas)
                                 }
-                                booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                                booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
                             }elseif(zone == Zone.Sheet){
                                 $if !legacyUndoRedo{
-                                    ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
+                                    ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), Sheet(booklet.currentSheet).canvas)
                                 }
-                                Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(Eraser(pen).thickness / 2), float(Eraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                                Sheet(booklet.currentSheet).canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(pen).thickness / 2), float(CircularEraser(pen).thickness / 2))), new Color(0, 0, 0, 0), false)
                             }
-                        }else{
+                        }elseif(pen == pathEraser){
+                            if(zone == Zone.Canvas){
+                                var pixel = booklet.canvas.getPixel(int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
+                                if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                    $if !legacyUndoRedo{
+                                        if(!hasPushedUndoDiff){
+                                            undoList.add(new ImageDiff())
+                                            hasPushedUndoDiff = true
+                                            hasUndoAvailabilityChanged = true
+                                        }
+                                    }
+                                    utils.clear_path(booklet.canvas, int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                                }
+                            }elseif(zone == Zone.Sheet){
+                                var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
+                                if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
+                                    $if !legacyUndoRedo{
+                                        if(!hasPushedUndoDiff){
+                                            undoList.add(new ImageDiff())
+                                            hasPushedUndoDiff = true
+                                            hasUndoAvailabilityChanged = true
+                                        }
+                                    }
+                                    utils.clear_path(Sheet(booklet.currentSheet).canvas, int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
+                                }
+                            }
+                        }elseif(pen oftype Pen){
                             if(zone == Zone.Canvas){
                                 $if !legacyUndoRedo{
                                     ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
@@ -801,8 +928,12 @@ window.onTouchUp = callback(list<TouchPoint> points){
                     }
                     i++
                 }
-                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2 + eraserIcon.width && point.position.y > get_toolbar_height(window) / 2f - eraserIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - eraserIcon.height / 2 + eraserIcon.height){
-                    pen = eraser
+                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2 + circularEraserIcon.width && point.position.y > get_toolbar_height(window) / 2f - circularEraserIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - circularEraserIcon.height / 2 + circularEraserIcon.height){
+                    pen = circularEraser
+                }
+                i++
+                if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2 + pathEraserIcon.width && point.position.y > get_toolbar_height(window) / 2f - pathEraserIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - pathEraserIcon.height / 2 + pathEraserIcon.height){
+                    pen = pathEraser
                 }
                 i++
                 if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - undoIcon.width / 2 + undoIcon.width && point.position.y > get_toolbar_height(window) / 2f - undoIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - undoIcon.height / 2 + undoIcon.height){
@@ -1134,30 +1265,45 @@ window.onPaint = callback(Canvas c) {
         i++
     }
     
-    if(hasSizeChangedForOnPaint || eraserIcon.width == 1){
-        eraserIcon = Canvas:fromFileData($embed("icons/eraser.png"))
-        eraserIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+    if(hasSizeChangedForOnPaint || circularEraserIcon.width == 1){
+        circularEraserIcon = Canvas:fromFileData($embed("icons/circular_eraser.png"))
+        circularEraserIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
     }
-    if(pen == eraser){
+    if(pen == circularEraser){
         if(theme == Theme.Light){
-            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(eraserIcon.width * 0.75), float(eraserIcon.height * 0.75))), new Color(255, 210, 210, 210))
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) + circularEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(circularEraserIcon.width * 0.75), float(circularEraserIcon.height * 0.75))), new Color(255, 210, 210, 210))
         }elseif(theme == Theme.Dark){
-            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2) + eraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(eraserIcon.width * 0.75), float(eraserIcon.height * 0.75))), new Color(50, 230, 230, 230))
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) + circularEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(circularEraserIcon.width * 0.75), float(circularEraserIcon.height * 0.75))), new Color(50, 230, 230, 230))
         }
     }
-    c.drawImage(eraserIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - eraserIcon.width / 2), int(get_toolbar_height(window) / 2 - eraserIcon.height / 2))
+    c.drawImage(circularEraserIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2), int(get_toolbar_height(window) / 2 - circularEraserIcon.height / 2))
 
     if(zone == Zone.Canvas){
-        if(pen == eraser && currentMousePosition != null){
+        if(pen == circularEraser && currentMousePosition != null){
             if(currentMousePosition.x > get_booklet_list_width(window) && currentMousePosition.y > get_toolbar_height(window)){
                 if(theme == Theme.Light){
-                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(eraser.thickness / 2), float(eraser.thickness / 2))), new Color(128, 210, 210, 210))
+                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(circularEraser.thickness / 2), float(circularEraser.thickness / 2))), new Color(128, 210, 210, 210))
                 }elseif(theme == Theme.Dark){
-                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(eraser.thickness / 2), float(eraser.thickness / 2))), new Color(128, 230, 230, 230))
+                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(circularEraser.thickness / 2), float(circularEraser.thickness / 2))), new Color(128, 230, 230, 230))
                 }
             }
         }
     }
+
+    i++
+    if(hasSizeChangedForOnPaint || pathEraserIcon.width == 1){
+        pathEraserIcon = Canvas:fromFileData($embed("icons/pen.png"))
+        pathEraserIcon.replaceColor(new Color(255, 128, 128, 128), new Color(255, 255, 192, 203))
+        pathEraserIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
+    }
+    if(pen == pathEraser){
+        if(theme == Theme.Light){
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) + pathEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(pathEraserIcon.width * 0.75), float(pathEraserIcon.height * 0.75))), new Color(255, 210, 210, 210))
+        }elseif(theme == Theme.Dark){
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) + pathEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(pathEraserIcon.width * 0.75), float(pathEraserIcon.height * 0.75))), new Color(50, 210, 210, 210))
+        }
+    }
+    c.drawImage(pathEraserIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2), int(get_toolbar_height(window) / 2 - pathEraserIcon.height / 2))
 
     i++
     if(undoIcon.width == 1 || hasSizeChangedForOnPaint || hasThemeChangedForOnPaint || hasUndoAvailabilityChanged){
@@ -1323,7 +1469,7 @@ function get_booklet_list_width(Window window, int width = -1, int height = -1) 
 }
 
 function get_toolbar_items_count() returns int{
-    return 10 + 2 // + 2 for the logo and the space between the logo and the first item
+    return 11 + 2 // + 2 for the logo and the space between the logo and the first item
 }
 
 function save(Booklet booklet, Theme theme, bool hasChanged, bool force = false){
