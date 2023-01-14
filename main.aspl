@@ -187,7 +187,7 @@ window.onMouseDown = callback(Point position, MouseButton button) {
                         undoList.add(booklet.canvas.copy())
                     }$else{
                         if(pen == pathEraser){
-                            var pixel = booklet.canvas.getPixel(int(position.x - get_booklet_list_width(window) + AppState:scrollX), int(position.y - get_toolbar_height(window) + AppState:scrollY))
+                            var pixel = booklet.canvas.getPixel(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
                             if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
                                 undoList.add(new ImageDiff())
                                 hasPushedUndoDiff = true
@@ -204,7 +204,7 @@ window.onMouseDown = callback(Point position, MouseButton button) {
                         undoList.add(Sheet(booklet.currentSheet).canvas.copy())
                     }$else{
                         if(pen == pathEraser){
-                            var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int(position.x - get_booklet_list_width(window) + AppState:scrollX), int(position.y - get_toolbar_height(window) + AppState:scrollY))
+                            var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
                             if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
                                 undoList.add(new ImageDiff())
                                 hasPushedUndoDiff = true
@@ -220,7 +220,7 @@ window.onMouseDown = callback(Point position, MouseButton button) {
                 if(undoList.length > UNDO_REDO_LIMIT){
                     undoList.removeAt(0)
                 }
-                if(redoList.length > 0){
+                if(hasPushedUndoDiff && redoList.length > 0){
                     redoList.clear()
                     hasRedoAvailabilityChanged = true
                 }
@@ -669,7 +669,7 @@ window.onTouchDown = callback(list<TouchPoint> points){
                             undoList.add(booklet.canvas.copy())
                         }$else{
                             if(pen == pathEraser){
-                                var pixel = booklet.canvas.getPixel(int((point.position.x - get_booklet_list_width(window) + AppState:scrollX) / AppState:zoom), int((point.position.y - get_toolbar_height(window) + AppState:scrollY) / AppState:zoom))
+                                var pixel = booklet.canvas.getPixel(int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
                                 if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
                                     undoList.add(new ImageDiff())
                                     hasPushedUndoDiff = true
@@ -686,7 +686,7 @@ window.onTouchDown = callback(list<TouchPoint> points){
                             undoList.add(Sheet(booklet.currentSheet).canvas.copy())
                         }$else{
                             if(pen == pathEraser){
-                                var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((point.position.x - get_booklet_list_width(window) + AppState:scrollX) / AppState:zoom), int((point.position.y - get_toolbar_height(window) + AppState:scrollY) / AppState:zoom))
+                                var pixel = Sheet(booklet.currentSheet).canvas.getPixel(int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
                                 if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
                                     undoList.add(new ImageDiff())
                                     hasPushedUndoDiff = true
@@ -702,7 +702,7 @@ window.onTouchDown = callback(list<TouchPoint> points){
                     if(undoList.length > UNDO_REDO_LIMIT){
                         undoList.removeAt(0)
                     }
-                    if(redoList.length > 0){
+                    if(hasPushedUndoDiff && redoList.length > 0){
                         redoList.clear()
                         hasRedoAvailabilityChanged = true
                     }
