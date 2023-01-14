@@ -6,7 +6,7 @@ class ImageDiff {
 
     property map<int, map<int, Color>> previousPixels = {}
 
-    method apply(Canvas|ChunkedCanvas canvas) returns ImageDiff{
+    method apply(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas) returns ImageDiff{
         var map<int, map<int, Color>> newPreviousPixels = {}
         if(canvas oftype Canvas){
             foreach(previousPixels as y => row){
@@ -24,13 +24,21 @@ class ImageDiff {
                     ChunkedCanvas(canvas).setPixel(x, y, color, false)
                 }
             }
+        }elseif(canvas oftype LazyChunkedCanvas){
+            foreach(previousPixels as y => row){
+                newPreviousPixels[y] = {}
+                foreach(row as x => color){
+                    newPreviousPixels[y][x] = LazyChunkedCanvas(canvas).getPixel(x, y)
+                    LazyChunkedCanvas(canvas).setPixel(x, y, color, false)
+                }
+            }
         }
         var newDiff = new ImageDiff()
         newDiff.previousPixels = newPreviousPixels
         return newDiff
     }
 
-    method track(Canvas|ChunkedCanvas canvas, int x, int y){
+    method track(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y){
         if(!previousPixels.containsKey(y)){
             previousPixels[y] = {}
         }
@@ -41,10 +49,12 @@ class ImageDiff {
             previousPixels[y][x] = Canvas(canvas).getPixel(x, y)
         }elseif(canvas oftype ChunkedCanvas){
             previousPixels[y][x] = ChunkedCanvas(canvas).getPixel(x, y)
+        }elseif(canvas oftype LazyChunkedCanvas){
+            previousPixels[y][x] = LazyChunkedCanvas(canvas).getPixel(x, y)
         }
     }
 
-    method trackDrawLine(int x1, int y1, int x2, int y2, int thickness, Canvas|ChunkedCanvas canvas){
+    method trackDrawLine(int x1, int y1, int x2, int y2, int thickness, Canvas|ChunkedCanvas|LazyChunkedCanvas canvas){
         var dx = x2 - x1
         var dy = y2 - y1
         var adx = int(math.abs(double(dx)))
@@ -90,7 +100,7 @@ class ImageDiff {
         }
     }
 
-    method trackFillCircle(Ellipse circle, Canvas|ChunkedCanvas canvas){
+    method trackFillCircle(Ellipse circle, Canvas|ChunkedCanvas|LazyChunkedCanvas canvas){
         var i = -int(circle.size.width)
         while(i < int(circle.size.width)) {
             var j = -int(circle.size.height)
@@ -105,7 +115,7 @@ class ImageDiff {
     }
 
     // TODO: Remove this method; it is currently here for performance reasons because trackFillCircle is too slow
-    method trackFillCircleRectangular(Ellipse circle, Canvas|ChunkedCanvas canvas){
+    method trackFillCircleRectangular(Ellipse circle, Canvas|ChunkedCanvas|LazyChunkedCanvas canvas){
         var i = -int(circle.size.width)
         while(i < int(circle.size.width)) {
             var j = -int(circle.size.height)

@@ -61,7 +61,7 @@ if(!io.exists_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))){
     bookletName = io.read_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))
 }
 var list<Booklet> booklets = []
-var Booklet booklet = new Booklet("Notes", new Color(255, 249, 186, 5), new ChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window)), [], 0, 0)
+var Booklet booklet = new Booklet("Notes", new Color(255, 249, 186, 5), new LazyChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window), io.join_path([Booklet:getBookletsPath(), "Notes", "chunks"])), [], 0, 0)
 var hasAnySelected = false
 var bookletFolders = utils.sort_alphabetically(io.directories(Booklet:getBookletsPath()))
 {
@@ -82,8 +82,11 @@ foreach(bookletFolders as folder){
         if(!io.exists_file(io.join_path([folder, "booklet.json"]))){
             continue
         }
+        if(!io.exists_directory(io.join_path([folder, "chunks"]))){
+            io.create_directory(io.join_path([folder, "chunks"]))
+        }
         var data = json.decode(io.read_file(io.join_path([folder, "booklet.json"])))
-        var c = new ChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window))
+        var c = new LazyChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window), io.join_path([folder, "chunks"]))
         var list<string> sheetFiles = []
         if(map<string, any>(data).containsKey("sheets")){
             foreach(list<any>(map<string, any>(data)["sheets"]) as sheet){
@@ -109,8 +112,17 @@ foreach(bookletFolders as folder){
 }
 if(booklets.length == 0 || !hasAnySelected){
     booklets.add(booklet)
+    if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), booklet.name, "chunks"]))){
+        if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), booklet.name]))){
+            io.create_directory(io.join_path([Booklet:getBookletsPath(), booklet.name]))
+        }
+        io.create_directory(io.join_path([Booklet:getBookletsPath(), booklet.name, "chunks"]))
+    }
+    if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), booklet.name, "sheets"]))){
+        io.create_directory(io.join_path([Booklet:getBookletsPath(), booklet.name, "sheets"]))
+    }
+    booklet.prepare()
 }
-var pens = [new Pen(new Color(255, 0, 0, 0), 2), new Pen(new Color(255, 255, 0, 0), 2), new Pen(new Color(255, 0, 255, 0), 2), new Pen(new Color(255, 0, 0, 255), 2), new Pen(new Color(255, 255, 255, 0), 2)]
 var Pen|CircularEraser|PathEraser pen = pens[0]
 var circularEraser = new CircularEraser(30)
 var pathEraser = new PathEraser()
@@ -131,7 +143,7 @@ var newSheetIconOriginal = Canvas:fromFileData($embed("icons/new_sheet.png"))
 var sheetCollectionHeight = 0
 var list<Rectangle> sheetCollectionBounds = []
 var sheetImporterHeight = 0
-// TODO: The below lists should be of type ImageDiff (or ChunkedCanvas|Canvas with the $legacyUndoRedo flag), but due to a bug in ASPL, this is currently not possible
+// TODO: The below lists should be of type ImageDiff (or LazyChunkedCanvas|Canvas with the $legacyUndoRedo flag), but due to a bug in ASPL, this is currently not possible
 var list<any> undoList = []
 var list<any> redoList = []
 var Theme theme = Theme.Light
@@ -366,7 +378,7 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                         if(zone == Zone.Canvas){
                             $if legacyUndoRedo{
                                 redoList.add(booklet.canvas.copy())
-                                booklet.canvas = ChunkedCanvas(undoList[undoList.length - 1])
+                                booklet.canvas = LazyChunkedCanvas(undoList[undoList.length - 1])
                             }$else{
                                 redoList.add(ImageDiff(undoList[undoList.length - 1]).apply(booklet.canvas))
                             }
@@ -400,7 +412,7 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                         if(zone == Zone.Canvas){
                             $if legacyUndoRedo{
                                 undoList.add(booklet.canvas.copy())
-                                booklet.canvas = ChunkedCanvas(redoList[redoList.length - 1])
+                                booklet.canvas = LazyChunkedCanvas(redoList[redoList.length - 1])
                             }$else{
                                 undoList.add(ImageDiff(redoList[redoList.length - 1]).apply(booklet.canvas))
                             }
@@ -945,7 +957,7 @@ window.onTouchUp = callback(list<TouchPoint> points){
                             if(zone == Zone.Canvas){
                                 $if legacyUndoRedo{
                                     redoList.add(booklet.canvas.copy())
-                                    booklet.canvas = ChunkedCanvas(undoList[undoList.length - 1])
+                                    booklet.canvas = LazyChunkedCanvas(undoList[undoList.length - 1])
                                 }$else{
                                     redoList.add(ImageDiff(undoList[undoList.length - 1]).apply(booklet.canvas))
                                 }
@@ -979,7 +991,7 @@ window.onTouchUp = callback(list<TouchPoint> points){
                             if(zone == Zone.Canvas){
                                 $if legacyUndoRedo{
                                     undoList.add(booklet.canvas.copy())
-                                    booklet.canvas = ChunkedCanvas(redoList[redoList.length - 1])
+                                    booklet.canvas = LazyChunkedCanvas(redoList[redoList.length - 1])
                                 }$else{
                                     undoList.add(ImageDiff(redoList[redoList.length - 1]).apply(booklet.canvas))
                                 }
@@ -1142,6 +1154,7 @@ window.onPaint = callback(Canvas c) {
         c.fill(new Color(255, 20, 20, 20), false) // no blend for performance reasons
     }
     if(zone == Zone.Canvas){
+        booklet.canvas.requireArea(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(booklet.canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(booklet.canvas.height - AppState:scrollY))))
         var canv = booklet.canvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(booklet.canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(booklet.canvas.height - AppState:scrollY))))
         if(theme == Theme.Dark){
             canv.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))

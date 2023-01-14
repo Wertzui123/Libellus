@@ -1,6 +1,6 @@
 import graphics
 
-function clear_path(Canvas|ChunkedCanvas canvas, int x, int y, ImageDiff? diff = null){
+function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y, ImageDiff? diff = null){
     var none = new Color(0, 0, 0, 0)
     var red = new Color(255, 255, 0, 0)
     var color = none
@@ -8,6 +8,8 @@ function clear_path(Canvas|ChunkedCanvas canvas, int x, int y, ImageDiff? diff =
         color = Canvas(canvas).getPixel(x, y)
     }elseif(canvas oftype ChunkedCanvas){
         color = ChunkedCanvas(canvas).getPixel(x, y)
+    }elseif(canvas oftype LazyChunkedCanvas){
+        color = LazyChunkedCanvas(canvas).getPixel(x, y)
     }
     if(color.a == none.a && color.r == none.r && color.g == none.g && color.b == none.b){
         return
@@ -27,6 +29,8 @@ function clear_path(Canvas|ChunkedCanvas canvas, int x, int y, ImageDiff? diff =
                 pixel = Canvas(canvas).getPixel(pos[0], pos[1])
             }elseif(canvas oftype ChunkedCanvas){
                 pixel = ChunkedCanvas(canvas).getPixel(pos[0], pos[1])
+            }elseif(canvas oftype LazyChunkedCanvas){
+                pixel = LazyChunkedCanvas(canvas).getPixel(pos[0], pos[1])
             }
             if(pixel.a == color.a && pixel.r == color.r && pixel.g == color.g && pixel.b == color.b){
                 if(diff != null){
@@ -36,6 +40,8 @@ function clear_path(Canvas|ChunkedCanvas canvas, int x, int y, ImageDiff? diff =
                     Canvas(canvas).setPixel(pos[0], pos[1], none, false)
                 }elseif(canvas oftype ChunkedCanvas){
                     ChunkedCanvas(canvas).setPixel(pos[0], pos[1], none, false)
+                }elseif(canvas oftype LazyChunkedCanvas){
+                    LazyChunkedCanvas(canvas).setPixel(pos[0], pos[1], none, false)
                 }
                 if(canvas oftype Canvas){
                     if(pos[0] + 1 < Canvas(canvas).width){
@@ -43,6 +49,10 @@ function clear_path(Canvas|ChunkedCanvas canvas, int x, int y, ImageDiff? diff =
                     }
                 }elseif(canvas oftype ChunkedCanvas){
                     if(pos[0] + 1 < ChunkedCanvas(canvas).width){
+                        toHandle.add([pos[0] + 1, pos[1]])
+                    }
+                }elseif(canvas oftype LazyChunkedCanvas){
+                    if(pos[0] + 1 < LazyChunkedCanvas(canvas).width){
                         toHandle.add([pos[0] + 1, pos[1]])
                     }
                 }
@@ -55,6 +65,10 @@ function clear_path(Canvas|ChunkedCanvas canvas, int x, int y, ImageDiff? diff =
                     }
                 }elseif(canvas oftype ChunkedCanvas){
                     if(pos[1] + 1 < ChunkedCanvas(canvas).height){
+                        toHandle.add([pos[0], pos[1] + 1])
+                    }
+                }elseif(canvas oftype LazyChunkedCanvas){
+                    if(pos[1] + 1 < LazyChunkedCanvas(canvas).height){
                         toHandle.add([pos[0], pos[1] + 1])
                     }
                 }

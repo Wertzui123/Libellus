@@ -6,7 +6,7 @@ class Booklet {
     
     property string name
     property Color color
-    property ChunkedCanvas canvas
+    property LazyChunkedCanvas canvas
     property list<string> sheetFiles
     property list<Sheet> sheets
     property Sheet? currentSheet
@@ -14,7 +14,7 @@ class Booklet {
     property int scrollY
     property bool loaded
 
-    method construct(string name, Color color, ChunkedCanvas canvas, list<string> sheetFiles, int scrollX, int scrollY) {
+    method construct(string name, Color color, LazyChunkedCanvas canvas, list<string> sheetFiles, int scrollX, int scrollY) {
         this.name = name
         this.color = color
         this.canvas = canvas
@@ -26,7 +26,15 @@ class Booklet {
     method prepare(){
         var folder = io.join_path([self:getBookletsPath(), name])
         if(io.exists_file(io.join_path([folder, "canvas.cif"]))){
-            canvas = ChunkedCanvas:fromFile(io.join_path([folder, "canvas.cif"]))
+            var c = ChunkedCanvas:fromFile(io.join_path([folder, "canvas.cif"]))
+            if(!io.exists_directory(io.join_path([folder, "chunks"]))){
+                io.create_directory(io.join_path([folder, "chunks"]))
+            }
+            c.convertToLazy(io.join_path([folder, "canvas.lci"]), io.join_path([folder, "chunks"]))
+            canvas = LazyChunkedCanvas:fromFile(io.join_path([folder, "canvas.lci"]), io.join_path([folder, "chunks"]))
+            io.delete_file(io.join_path([folder, "canvas.cif"]))
+        }elseif(io.exists_file(io.join_path([folder, "canvas.lci"]))){
+            canvas = LazyChunkedCanvas:fromFile(io.join_path([folder, "canvas.lci"]), io.join_path([folder, "chunks"]))
         }
 
         var list<string> sheetPaths = []
@@ -42,10 +50,11 @@ class Booklet {
         loaded = true
     }
 
-    // Warning: Save the canvas and the sheets before calling this method!
+    // unprepare unloades the booklet from memory
+    // this will automatically save the canvas of the booklet but not the sheets
     method unprepare(){
         loaded = false
-        canvas = new ChunkedCanvas(1, 1) // TODO: Use `null` instead
+        canvas.requireArea(0, 0, 0, 0)
         sheets = []
     }
 
@@ -75,7 +84,7 @@ class Booklet {
             }
         }))
         if(!saveOnlyMeta){
-            canvas.save(bookletsPath + "/" + name + "/canvas.cif")
+            canvas.save(bookletsPath + "/" + name + "/canvas.lci")
             if(!io.exists_directory(bookletsPath + "/" + name + "/sheets")){
                 io.create_directory(bookletsPath + "/" + name + "/sheets")
             }
