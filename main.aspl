@@ -9,7 +9,7 @@ import json
 
 var int UNDO_REDO_LIMIT = 30
 
-var Window window = new Window(500, 500)
+var Window window = new Window("Libellus", 500, 500)
 
 if(!io.exists_directory(Booklet:getBookletsPath())){
     io.create_directory(Booklet:getBookletsPath())
