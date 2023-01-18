@@ -45,35 +45,51 @@ function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y,
                 }
                 if(canvas oftype Canvas){
                     if(pos[0] + 1 < Canvas(canvas).width){
-                        toHandle.add([pos[0] + 1, pos[1]])
+                        if(!handled.containsKey(pos[0] + 1) || !handled[pos[0] + 1].contains(pos[1])){
+                            toHandle.add([pos[0] + 1, pos[1]])
+                        }
                     }
                 }elseif(canvas oftype ChunkedCanvas){
                     if(pos[0] + 1 < ChunkedCanvas(canvas).width){
-                        toHandle.add([pos[0] + 1, pos[1]])
+                        if(!handled.containsKey(pos[0] + 1) || !handled[pos[0] + 1].contains(pos[1])){
+                            toHandle.add([pos[0] + 1, pos[1]])
+                        }
                     }
                 }elseif(canvas oftype LazyChunkedCanvas){
                     if(pos[0] + 1 < LazyChunkedCanvas(canvas).width){
-                        toHandle.add([pos[0] + 1, pos[1]])
+                        if(!handled.containsKey(pos[0] + 1) || !handled[pos[0] + 1].contains(pos[1])){
+                            toHandle.add([pos[0] + 1, pos[1]])
+                        }
                     }
                 }
                 if(pos[0] - 1 >= 0){
-                    toHandle.add([pos[0] - 1, pos[1]])
+                    if(!handled.containsKey(pos[0] - 1) || !handled[pos[0] - 1].contains(pos[1])){
+                        toHandle.add([pos[0] - 1, pos[1]])
+                    }
                 }
                 if(canvas oftype Canvas){
                     if(pos[1] + 1 < Canvas(canvas).height){
-                        toHandle.add([pos[0], pos[1] + 1])
+                        if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] + 1)){
+                            toHandle.add([pos[0], pos[1] + 1])
+                        }
                     }
                 }elseif(canvas oftype ChunkedCanvas){
                     if(pos[1] + 1 < ChunkedCanvas(canvas).height){
-                        toHandle.add([pos[0], pos[1] + 1])
+                        if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] + 1)){
+                            toHandle.add([pos[0], pos[1] + 1])
+                        }
                     }
                 }elseif(canvas oftype LazyChunkedCanvas){
                     if(pos[1] + 1 < LazyChunkedCanvas(canvas).height){
-                        toHandle.add([pos[0], pos[1] + 1])
+                        if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] + 1)){
+                            toHandle.add([pos[0], pos[1] + 1])
+                        }
                     }
                 }
                 if(pos[1] - 1 >= 0){
-                    toHandle.add([pos[0], pos[1] - 1])
+                    if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] - 1)){
+                        toHandle.add([pos[0], pos[1] - 1])
+                    }
                 }
             }
         }
