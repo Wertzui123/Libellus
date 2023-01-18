@@ -1,12 +1,22 @@
+import libellus
+
 [static]
 class AppState {
     
     [static]
-    property int scrollX = 0
+    property Zone zone = Zone.Canvas
     [static]
     property int scrollY = 0
+    
+    [static]
+    property int scrollX
+    [static]
+    property int scrollY
 
     [static]
     property float zoom = 1
+
+    [static]
+    property bool gridVisible
 
 }

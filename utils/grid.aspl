@@ -1,0 +1,27 @@
+import libellus
+import graphics
+import math
+import math.geometry
+
+function draw_grid(Canvas canvas, Theme theme){
+    var color = new Color(255, 200, 200, 200)
+    if(theme == Theme.Dark){
+        color = new Color(255, 55, 55, 55)
+    }
+    var min = float(math.min(double(canvas.width * AppState:zoom / 30f), double(canvas.height * AppState:zoom / 30f)))
+    if(AppState:zoom < 1){
+        repeat(int((canvas.width / AppState:zoom) / min), i = 0){
+            canvas.drawLine(int(i * min), 0, int(i * min), int(canvas.height / AppState:zoom), color)
+        }
+        repeat(int((canvas.height / AppState:zoom) / min), i = 0){
+            canvas.drawLine(0, int(i * min), int(canvas.width / AppState:zoom), int(i * min), color)
+        }
+    }else{
+        repeat(int((canvas.width * AppState:zoom) / min), i = 0){
+            canvas.drawLine(int(i * min), 0, int(i * min), canvas.height, color)
+        }
+        repeat(int((canvas.height * AppState:zoom) / min), i = 0){
+            canvas.drawLine(0, int(i * min), canvas.width, int(i * min), color)
+        }
+    }
+}
