@@ -1456,7 +1456,7 @@ window.onPaint = callback(Canvas c) {
     }
 
     if(AppState:zone == Zone.Canvas){
-        if(hasSizeChangedForOnPaint || gridToggleIcon.width == 1 || hasGridVisibilityChangedForOnPaint){
+        if(hasSizeChangedForOnPaint || gridToggleIcon.width == 1 || hasGridVisibilityChangedForOnPaint || hasThemeChangedForOnPaint){
             gridToggleIcon = Canvas:fromFileData($embed("icons/grid.png"))
             if(theme == Theme.Dark){
                 gridToggleIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
