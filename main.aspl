@@ -1202,7 +1202,7 @@ window.onPaint = callback(Canvas c) {
     }else{
         c.fill(new Color(255, 20, 20, 20), false) // no blend for performance reasons
     }
-    if(zone == Zone.Canvas){
+    if(AppState:zone == Zone.Canvas){
         booklet.canvas.requireArea(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(booklet.canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(booklet.canvas.height - AppState:scrollY))))
         var canv = booklet.canvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(booklet.canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(booklet.canvas.height - AppState:scrollY))))
         if(theme == Theme.Dark){
