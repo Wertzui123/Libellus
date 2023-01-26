@@ -5,8 +5,6 @@ class AppState {
     
     [static]
     property Zone zone = Zone.Canvas
-    [static]
-    property int scrollY = 0
     
     [static]
     property int scrollX
