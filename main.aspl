@@ -507,10 +507,11 @@ window.onMouseClick = callback(Point position, MouseButton button) {
             var int i = 0
             foreach(booklets as b){
                 var name = b.name
+                var bookletFont = font
                 if(b == booklet){
-                    name += " [x]"
+                    bookletFont = font.withSize(int(font.size * 1.15))
                 }
-                var size = graphics.measure_text_size(name, font)
+                var size = graphics.measure_text_size(name, font) // font is used here instead of bookletFont because the space between all the booklets should be the same
                 var height = int(size.height)
                 if(position.y >= y - height * 1.5 && position.y <= y){
                     booklet.unprepare()
@@ -928,10 +929,11 @@ window.onTouchUp = callback(list<TouchPoint> points){
                 var int i = 0
                 foreach(booklets as b){
                     var name = b.name
+                    var bookletFont = font
                     if(b == booklet){
-                        name += " [x]"
+                        bookletFont = font.withSize(int(font.size * 1.15))
                     }
-                    var size = graphics.measure_text_size(name, font)
+                    var size = graphics.measure_text_size(name, font) // font is used here instead of bookletFont because the space between all the booklets should be the same
                     var height = int(size.height)
                     if(point.position.x <= get_booklet_list_width(window) && point.position.y >= y - height * 1.5 && point.position.y <= y){
                         booklet.unprepare()
@@ -1441,11 +1443,12 @@ window.onPaint = callback(Canvas c) {
     font = font.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 70d, 7d)))
     foreach(booklets as b){
         var name = b.name
+        var bookletFont = font
         if(b == booklet){
-            name += " [x]"
+            bookletFont = font.withSize(int(font.size * 1.15))
         }
-        c.drawText(name, int(get_booklet_list_width(window) / 10) + bookletIcon.width, y, font, textColor, HorizontalAlignment.Left, VerticalAlignment.Center)
-        var size = graphics.measure_text_size(name, font)
+        c.drawText(name, int(get_booklet_list_width(window) / 10) + bookletIcon.width, y, bookletFont, textColor, HorizontalAlignment.Left, VerticalAlignment.Center)
+        var size = graphics.measure_text_size(name, font) // font is used here instead of bookletFont because the space between all the booklets should be the same
         // TODO: The below rectangle calculation is implemented badly and based on guessings
         var scaleFactor = bookletIcon.width / 74f // TODO: Do not hardcode the origin size
         var w = 30 * scaleFactor
