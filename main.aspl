@@ -145,6 +145,7 @@ var newSheetIconOriginal = Canvas:fromFileData($embed("icons/new_sheet.png"))
 var sheetCollectionHeight = 0
 var list<Rectangle> sheetCollectionBounds = []
 var sheetImporterHeight = 0
+var hasInitializedSheetCollectionScroll = false
 // TODO: The below lists should be of type ImageDiff (or LazyChunkedCanvas|Canvas with the $legacyUndoRedo flag), but due to a bug in ASPL, this is currently not possible
 var list<any> undoList = []
 var list<any> redoList = []
@@ -542,7 +543,7 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                 var int i = 0
                 foreach(sheetCollectionBounds as b){
                     if(position.x >= b.position.x && position.x <= b.position.x + b.size.width && position.y >= b.position.y && position.y <= b.position.y + b.size.height){
-                        if(i == 0){
+                        if(i == sheetCollectionBounds.length - 1){
                             AppState:zone = Zone.SheetImporter
                             sheetImporterPath = io.get_home_directory()
                             booklet.currentSheet = null
@@ -555,7 +556,7 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                             hasSizeChangedForOnPaint = true
                         }else{
                             AppState:zone = Zone.Sheet
-                            booklet.currentSheet = booklet.sheets[i - 1]
+                            booklet.currentSheet = booklet.sheets[i]
                             AppState:scrollX = 0
                             AppState:scrollY = 0
                             AppState:zoom = 1
@@ -1105,7 +1106,7 @@ window.onTouchUp = callback(list<TouchPoint> points){
                 var int i = 0
                 foreach(sheetCollectionBounds as b){
                     if(point.position.x >= b.position.x && point.position.x <= b.position.x + b.size.width && point.position.y >= b.position.y && point.position.y <= b.position.y + b.size.height){
-                        if(i == 0){
+                        if(i == sheetCollectionBounds.length - 1){
                             AppState:zone = Zone.SheetImporter
                             $if android{
                                 sheetImporterPath = "/storage/emulated/0"
@@ -1122,7 +1123,7 @@ window.onTouchUp = callback(list<TouchPoint> points){
                             hasSizeChangedForOnPaint = true
                         }else{
                             AppState:zone = Zone.Sheet
-                            booklet.currentSheet = booklet.sheets[i - 1]
+                            booklet.currentSheet = booklet.sheets[i]
                             AppState:scrollX = 0
                             AppState:scrollY = 0
                             AppState:zoom = 1
@@ -1226,27 +1227,37 @@ window.onPaint = callback(Canvas c) {
             newSheetIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
         }
         newSheetIcon.resize(int(math.sqrt(double(window.width * window.height)) / 6), int(math.sqrt(double(window.width * window.height)) / 6))
-        c.drawImage(newSheetIcon, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - newSheetIcon.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
-        sheetCollectionBounds = []
-        sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - newSheetIcon.width / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(newSheetIcon.width), float(newSheetIcon.height))))
-        y += newSheetIcon.height + 10
-        foreach(booklet.sheets as sheet){
-            var scaleFactor = math.min(c.width / double(sheet.canvas.width), c.height / double(sheet.canvas.height)) * 0.5
-            var imgWidth = int(sheet.canvas.width * scaleFactor)
-            var imgHeight = int(sheet.canvas.height * scaleFactor)
-            if((get_toolbar_height(window) + y - AppState:scrollY + imgHeight >= 0) && (get_toolbar_height(window) + y - AppState:scrollY < c.height)){
-                var img = sheet.sheetCanvas.copy()
-                img.resize(imgWidth, imgHeight)
-                c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY, false) // no blend for performance reasons
-                img = sheet.canvas.copy()
-                img.resize(imgWidth, imgHeight)
-                c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
-                c.drawRectangle(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX) - 1, float(get_toolbar_height(window) + y - AppState:scrollY) - 1), new Size(float(img.width) + 2, float(img.height) + 2)), new Color(255, 0, 0, 0)) // TODO: The rectangle is sometimes off a a bit (1 pixel too wide and the upper left corner is 1 pixel too high)
+        var drawSheets = false
+        while(!drawSheets){
+            if(hasInitializedSheetCollectionScroll){
+                drawSheets = true
             }
-            sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - imgWidth / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(imgWidth), float(imgHeight))))
-            y += imgHeight + 10
+            sheetCollectionBounds = []
+            foreach(booklet.sheets as sheet){
+                var scaleFactor = math.min(c.width / double(sheet.canvas.width), c.height / double(sheet.canvas.height)) * 0.5
+                var imgWidth = int(sheet.canvas.width * scaleFactor)
+                var imgHeight = int(sheet.canvas.height * scaleFactor)
+                if(drawSheets && (get_toolbar_height(window) + y - AppState:scrollY + imgHeight >= 0) && (get_toolbar_height(window) + y - AppState:scrollY < c.height)){
+                    var img = sheet.sheetCanvas.copy()
+                    img.resize(imgWidth, imgHeight)
+                    c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY, false) // no blend for performance reasons
+                    img = sheet.canvas.copy()
+                    img.resize(imgWidth, imgHeight)
+                    c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
+                    c.drawRectangle(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX) - 1, float(get_toolbar_height(window) + y - AppState:scrollY) - 1), new Size(float(img.width) + 2, float(img.height) + 2)), new Color(255, 0, 0, 0)) // TODO: The rectangle is sometimes off a a bit (1 pixel too wide and the upper left corner is 1 pixel too high)
+                }
+                sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - imgWidth / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(imgWidth), float(imgHeight))))
+                y += imgHeight + 10
+            }
+            c.drawImage(newSheetIcon, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - newSheetIcon.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
+            sheetCollectionBounds.add(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - newSheetIcon.width / 2f) - AppState:scrollX), float(get_toolbar_height(window) + y - AppState:scrollY)), new Size(float(newSheetIcon.width), float(newSheetIcon.height))))
+            y += newSheetIcon.height + 10
+            sheetCollectionHeight = y
+            if(!hasInitializedSheetCollectionScroll){
+                AppState:scrollY = int(math.max(double(sheetCollectionHeight - (window.height - get_toolbar_height(window))), 0))
+                hasInitializedSheetCollectionScroll = true
+            }
         }
-        sheetCollectionHeight = y
     }elseif(AppState:zone == Zone.Sheet){
         var sheetCanv = Sheet(booklet.currentSheet).sheetCanvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).sheetCanvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(Sheet(booklet.currentSheet).sheetCanvas.height - AppState:scrollY))))
         sheetCanv.resizeScale(AppState:zoom)
