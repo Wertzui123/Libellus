@@ -175,7 +175,6 @@ var hasGridVisibilityChangedForOnPaint = false
 var hasUndoAvailabilityChanged = false
 var hasRedoAvailabilityChanged = false
 var isMouseDown = false
-var zone = Zone.Canvas
 var sheetImporterPath = ""
 var hasPushedUndoDiff = false
 window.onMouseDown = callback(Point position, MouseButton button) {
