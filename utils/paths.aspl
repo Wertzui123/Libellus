@@ -16,6 +16,7 @@ function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y,
     }
     var map<int, list<int>> handled = {}
     var list<list<int>> toHandle = [[x, y]]
+    var list<list<int>> chunksLoaded = []
     while(toHandle.length > 0){
         var list<int> pos = toHandle[toHandle.length - 1]
         toHandle.removeAt(toHandle.length - 1)
@@ -30,6 +31,10 @@ function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y,
             }elseif(canvas oftype ChunkedCanvas){
                 pixel = ChunkedCanvas(canvas).getPixel(pos[0], pos[1])
             }elseif(canvas oftype LazyChunkedCanvas){
+                if(!LazyChunkedCanvas(canvas).isChunkLoaded(int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT))){
+                    LazyChunkedCanvas(canvas).loadChunk(int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT))
+                    chunksLoaded.add([int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT)])
+                }
                 pixel = LazyChunkedCanvas(canvas).getPixel(pos[0], pos[1])
             }
             if(pixel.a == color.a && pixel.r == color.r && pixel.g == color.g && pixel.b == color.b){
@@ -92,6 +97,11 @@ function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y,
                     }
                 }
             }
+        }
+    }
+    if(canvas oftype LazyChunkedCanvas){
+        foreach(chunksLoaded as chunk){
+            LazyChunkedCanvas(canvas).unloadChunk(chunk[0], chunk[1])
         }
     }
 }
