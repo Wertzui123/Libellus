@@ -8,6 +8,7 @@ class ImageDiff {
 
     method apply(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas) returns ImageDiff{
         var map<int, map<int, Color>> newPreviousPixels = {}
+        var list<list<int>> chunksLoaded = []
         if(canvas oftype Canvas){
             foreach(previousPixels as y => row){
                 newPreviousPixels[y] = {}
@@ -28,10 +29,17 @@ class ImageDiff {
             foreach(previousPixels as y => row){
                 newPreviousPixels[y] = {}
                 foreach(row as x => color){
+                    if(!LazyChunkedCanvas(canvas).isChunkLoaded(int(x / LazyChunkedCanvas:CANVAS_WIDTH), int(y / LazyChunkedCanvas:CANVAS_HEIGHT))){
+                        LazyChunkedCanvas(canvas).loadChunk(int(x / LazyChunkedCanvas:CANVAS_WIDTH), int(y / LazyChunkedCanvas:CANVAS_HEIGHT))
+                        chunksLoaded.add([int(x / LazyChunkedCanvas:CANVAS_WIDTH), int(y / LazyChunkedCanvas:CANVAS_HEIGHT)])
+                    }
                     newPreviousPixels[y][x] = LazyChunkedCanvas(canvas).getPixel(x, y)
                     LazyChunkedCanvas(canvas).setPixel(x, y, color, false)
                 }
             }
+        }
+        foreach(chunksLoaded as chunk){
+            LazyChunkedCanvas(canvas).unloadChunk(chunk[0], chunk[1])
         }
         var newDiff = new ImageDiff()
         newDiff.previousPixels = newPreviousPixels
@@ -52,6 +60,27 @@ class ImageDiff {
         }elseif(canvas oftype LazyChunkedCanvas){
             previousPixels[y][x] = LazyChunkedCanvas(canvas).getPixel(x, y)
         }
+    }
+
+    method trackIfNotNone(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y){
+        /*if(canvas oftype Canvas){
+            var pixel = Canvas(canvas).getPixel(x, y)
+            if(pixel.r == 0b && pixel.g == 0b && pixel.b == 0b && pixel.a == 0b){
+                return
+            }
+        }elseif(canvas oftype ChunkedCanvas){
+            var pixel = ChunkedCanvas(canvas).getPixel(x, y)
+            if(pixel.r == 0b && pixel.g == 0b && pixel.b == 0b && pixel.a == 0b){
+                return
+            }
+        }elseif(canvas oftype LazyChunkedCanvas){
+            /*var pixel = LazyChunkedCanvas(canvas).getPixel(x, y)
+            if(pixel.r == 0b && pixel.g == 0b && pixel.b == 0b && pixel.a == 0b){
+                return
+            }*/
+        }
+        //track(canvas, x, y)
+        */
     }
 
     method trackDrawLine(int x1, int y1, int x2, int y2, int thickness, Canvas|ChunkedCanvas|LazyChunkedCanvas canvas){
