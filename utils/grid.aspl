@@ -9,19 +9,20 @@ function draw_grid(Canvas canvas, Theme theme){
         color = new Color(255, 55, 55, 55)
     }
     var min = float(math.min(double(canvas.width * AppState:zoom / 30f), double(canvas.height * AppState:zoom / 30f)))
+    // TODO: The grid is still off when zoomed in/out
     if(AppState:zoom < 1){
-        repeat(int((canvas.width / AppState:zoom) / min), i = 0){
-            canvas.drawLine(int(i * min), 0, int(i * min), int(canvas.height / AppState:zoom), color)
+        repeat(int((canvas.width / AppState:zoom) / min) + 1, i = 0){
+            canvas.drawLine(int((i * min) - ((AppState:scrollX * AppState:zoom) % min)), 0, int((i * min) - ((AppState:scrollX * AppState:zoom) % min)), int(canvas.height / AppState:zoom), color)
         }
-        repeat(int((canvas.height / AppState:zoom) / min), i = 0){
-            canvas.drawLine(0, int(i * min), int(canvas.width / AppState:zoom), int(i * min), color)
+        repeat(int((canvas.height / AppState:zoom) / min) + 1, i = 0){
+            canvas.drawLine(0, int((i * min) - ((AppState:scrollY * AppState:zoom) % min)), int(canvas.width / AppState:zoom), int((i * min) - ((AppState:scrollY * AppState:zoom) % min)), color)
         }
     }else{
-        repeat(int((canvas.width * AppState:zoom) / min), i = 0){
-            canvas.drawLine(int(i * min), 0, int(i * min), canvas.height, color)
+        repeat(int((canvas.width * AppState:zoom) / min) + 1, i = 0){
+            canvas.drawLine(int((i * min) - ((AppState:scrollX / AppState:zoom) % min)), 0, int((i * min) - ((AppState:scrollX / AppState:zoom) % min)), canvas.height, color)
         }
-        repeat(int((canvas.height * AppState:zoom) / min), i = 0){
-            canvas.drawLine(0, int(i * min), canvas.width, int(i * min), color)
+        repeat(int((canvas.height * AppState:zoom) / min) + 1, i = 0){
+            canvas.drawLine(0, int((i * min) - ((AppState:scrollY / AppState:zoom) % min)), canvas.width, int((i * min) - ((AppState:scrollY / AppState:zoom) % min)), color)
         }
     }
 }
