@@ -91,7 +91,7 @@ class Booklet {
             foreach(sheets as sheet){
                 if(sheet.hasChanged){
                     sheet.hasChanged = false
-                    sheet.save(this)
+                    sheet.save()
                 }
             }
         }

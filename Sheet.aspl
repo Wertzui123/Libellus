@@ -1,35 +1,55 @@
 import graphics
+import math.geometry
 
 class Sheet {
     
     property string name
     property string file
-    property Canvas sheetCanvas
-    property Canvas canvas
+    property Size size
+    property Canvas? canvas
+    property Canvas? sheetCanvas
+    property bool loaded
     property bool hasChanged
 
-    method construct(string name, string file, Canvas sheetCanvas, Canvas canvas) {
+    method construct(string name, string file, Size size) {
         this.name = name
         this.file = file
-        this.sheetCanvas = sheetCanvas
-        this.canvas = canvas
+        this.size = size
     }
 
     [static]
     method fromFile(string file) returns Sheet{
-        var sheetCanvas = Canvas:fromFile(file)
-        var canvasFile = file.reverse().split(".", 2)[1].reverse() + ".canvas.png"
-        if(!io.exists_file(canvasFile)) {
-            var canvas = new Canvas(sheetCanvas.width, sheetCanvas.height)
-            canvas.save(canvasFile)
-        }
-        var canvas = Canvas:fromFile(canvasFile)
         var name = file.reverse().split("/", 2)[0].split(".", 2)[1].reverse()
-        return new self(name, file, sheetCanvas, canvas)
+        var size = new Size(float(graphics.get_image_width_from_file(file)), float(graphics.get_image_height_from_file(file)))
+        return new self(name, file, size)
     }
 
-    method save(Booklet booklet) {
-        canvas.save(file.reverse().split(".", 2)[1].reverse() + ".canvas.png")
+    method load(){
+        if(!loaded) {
+            sheetCanvas = Canvas:fromFile(file)
+            var canvasFile = file.reverse().split(".", 2)[1].reverse() + ".canvas.png"
+            if(!io.exists_file(canvasFile)) {
+                canvas = new Canvas(Canvas(sheetCanvas).width, Canvas(sheetCanvas).height)
+                Canvas(canvas).save(canvasFile)
+            }
+            canvas = Canvas:fromFile(canvasFile)
+            loaded = true
+        }
+    }
+
+    method unload(bool save){
+        if(loaded) {
+            if(save) {
+                this.save()
+            }
+            sheetCanvas = null
+            canvas = null
+            loaded = false
+        }
+    }
+
+    method save() {
+        Canvas(canvas).save(file.reverse().split(".", 2)[1].reverse() + ".canvas.png")
     }
 
 }
