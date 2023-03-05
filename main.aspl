@@ -604,6 +604,7 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                         }else{
                             io.write_file_bytes(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s, io.read_file_bytes(io.join_path([sheetImporterPath, s])))
                             var Sheet sheet = Sheet:fromFile(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s)
+                            sheet.load()
                             booklet.sheets.add(sheet)
                             booklet.currentSheet = sheet
                             AppState:zone = Zone.Sheet
@@ -1179,6 +1180,7 @@ window.onTouchUp = callback(list<TouchPoint> points){
                         }else{
                             io.write_file_bytes(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s, io.read_file_bytes(io.join_path([sheetImporterPath, s])))
                             var Sheet sheet = Sheet:fromFile(Booklet:getBookletsPath() + "/" + booklet.name + "/" + "sheets/" + s)
+                            sheet.load()
                             booklet.sheets.add(sheet)
                             booklet.currentSheet = sheet
                             AppState:zone = Zone.Sheet
