@@ -1,16 +1,9 @@
 import graphics
 
-function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y, ImageDiff? diff = null){
+function clear_path(ICanvas canvas, int x, int y, ImageDiff? diff = null){
     var none = new Color(0, 0, 0, 0)
     var red = new Color(255, 255, 0, 0)
-    var color = none
-    if(canvas oftype Canvas){
-        color = Canvas(canvas).getPixel(x, y)
-    }elseif(canvas oftype ChunkedCanvas){
-        color = ChunkedCanvas(canvas).getPixel(x, y)
-    }elseif(canvas oftype LazyChunkedCanvas){
-        color = LazyChunkedCanvas(canvas).getPixel(x, y)
-    }
+    var color = canvas.getPixel(x, y)
     if(color.a == none.a && color.r == none.r && color.g == none.g && color.b == none.b){
         return
     }
@@ -26,45 +19,23 @@ function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y,
         if(!handled[pos[0]].contains(pos[1])){
             handled[pos[0]].add(pos[1])
             var pixel = none
-            if(canvas oftype Canvas){
-                pixel = Canvas(canvas).getPixel(pos[0], pos[1])
-            }elseif(canvas oftype ChunkedCanvas){
-                pixel = ChunkedCanvas(canvas).getPixel(pos[0], pos[1])
-            }elseif(canvas oftype LazyChunkedCanvas){
+            if(canvas oftype LazyChunkedCanvas){
                 if(!LazyChunkedCanvas(canvas).isChunkLoaded(int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT))){
                     LazyChunkedCanvas(canvas).loadChunk(int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT))
                     chunksLoaded.add([int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT)])
                 }
                 pixel = LazyChunkedCanvas(canvas).getPixel(pos[0], pos[1])
+            }else{
+                pixel = canvas.getPixel(pos[0], pos[1])
             }
             if(pixel.a == color.a && pixel.r == color.r && pixel.g == color.g && pixel.b == color.b){
                 if(diff != null){
                     ImageDiff(diff).track(canvas, pos[0], pos[1])
                 }
-                if(canvas oftype Canvas){
-                    Canvas(canvas).setPixel(pos[0], pos[1], none, false)
-                }elseif(canvas oftype ChunkedCanvas){
-                    ChunkedCanvas(canvas).setPixel(pos[0], pos[1], none, false)
-                }elseif(canvas oftype LazyChunkedCanvas){
-                    LazyChunkedCanvas(canvas).setPixel(pos[0], pos[1], none, false)
-                }
-                if(canvas oftype Canvas){
-                    if(pos[0] + 1 < Canvas(canvas).width){
-                        if(!handled.containsKey(pos[0] + 1) || !handled[pos[0] + 1].contains(pos[1])){
-                            toHandle.add([pos[0] + 1, pos[1]])
-                        }
-                    }
-                }elseif(canvas oftype ChunkedCanvas){
-                    if(pos[0] + 1 < ChunkedCanvas(canvas).width){
-                        if(!handled.containsKey(pos[0] + 1) || !handled[pos[0] + 1].contains(pos[1])){
-                            toHandle.add([pos[0] + 1, pos[1]])
-                        }
-                    }
-                }elseif(canvas oftype LazyChunkedCanvas){
-                    if(pos[0] + 1 < LazyChunkedCanvas(canvas).width){
-                        if(!handled.containsKey(pos[0] + 1) || !handled[pos[0] + 1].contains(pos[1])){
-                            toHandle.add([pos[0] + 1, pos[1]])
-                        }
+                canvas.setPixel(pos[0], pos[1], none, false)
+                if(pos[0] + 1 < Canvas(canvas).width){
+                    if(!handled.containsKey(pos[0] + 1) || !handled[pos[0] + 1].contains(pos[1])){
+                        toHandle.add([pos[0] + 1, pos[1]])
                     }
                 }
                 if(pos[0] - 1 >= 0){
@@ -72,23 +43,9 @@ function clear_path(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y,
                         toHandle.add([pos[0] - 1, pos[1]])
                     }
                 }
-                if(canvas oftype Canvas){
-                    if(pos[1] + 1 < Canvas(canvas).height){
-                        if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] + 1)){
-                            toHandle.add([pos[0], pos[1] + 1])
-                        }
-                    }
-                }elseif(canvas oftype ChunkedCanvas){
-                    if(pos[1] + 1 < ChunkedCanvas(canvas).height){
-                        if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] + 1)){
-                            toHandle.add([pos[0], pos[1] + 1])
-                        }
-                    }
-                }elseif(canvas oftype LazyChunkedCanvas){
-                    if(pos[1] + 1 < LazyChunkedCanvas(canvas).height){
-                        if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] + 1)){
-                            toHandle.add([pos[0], pos[1] + 1])
-                        }
+                if(pos[1] + 1 < Canvas(canvas).height){
+                    if(!handled.containsKey(pos[0]) || !handled[pos[0]].contains(pos[1] + 1)){
+                        toHandle.add([pos[0], pos[1] + 1])
                     }
                 }
                 if(pos[1] - 1 >= 0){

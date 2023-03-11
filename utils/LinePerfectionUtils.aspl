@@ -1,0 +1,73 @@
+import time
+import math.geometry
+import graphics
+
+import libellus
+
+[static]
+class LinePerfectionUtils {
+
+    [static]
+    property bool isPointerDown
+    [static]
+    property long pointerId
+    [static]
+    property Point pointerDownPosition
+
+    [static]
+    property Timestamp? lastMovementTimestamp
+    [static]
+    property Point lastMovementPosition
+    [static]
+    property float cumulativeMovementX
+    [static]
+    property float cumulativeMovementY
+
+    [static]
+    property bool hasPerfected
+    [static]
+    property Timestamp? lastPerfectedTimestamp
+
+    [static]
+    property bool hasPerfectedTwo
+
+    [static]
+    method perfectIfApplicable(Window window, ICanvas canvas, Pen|CircularEraser|PathEraser pen, list<any> undoList) {
+        if(lastMovementTimestamp == null || lastMovementPosition == null) {
+            return
+        }
+        if(time.now().milliseconds - lastMovementTimestamp?!.milliseconds > 300 && cumulativeMovementX < 5 && cumulativeMovementY < 5){
+            if(hasPerfected && !hasPerfectedTwo && time.now().milliseconds - lastPerfectedTimestamp?!.milliseconds > 600){
+                hasPerfectedTwo = true
+                ImageDiff(undoList[undoList.length - 1]).apply(canvas)
+                undoList.removeAt(undoList.length - 1)
+                undoList.add(new ImageDiff())
+
+                if(math.abs(double(lastMovementPosition.x - pointerDownPosition.x)) != 0d && math.abs(double(lastMovementPosition.y - pointerDownPosition.y)) != 0d && math.abs(1 - (math.abs(double(lastMovementPosition.x - pointerDownPosition.x)) / math.abs(double(lastMovementPosition.y - pointerDownPosition.y)))) < 0.33){
+                    var deltaX = lastMovementPosition.x - pointerDownPosition.x
+                    var deltaY = lastMovementPosition.y - pointerDownPosition.y
+                    if(deltaX < 0 ^ deltaY < 0){
+                        deltaX = 0 - deltaX
+                    }
+                    ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((lastMovementPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y + deltaX - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, canvas)
+                    canvas.drawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((lastMovementPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y + deltaX - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                }elseif(math.abs(double(lastMovementPosition.x - pointerDownPosition.x)) > math.abs(double(lastMovementPosition.y - pointerDownPosition.y))){
+                    ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((lastMovementPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, canvas)
+                    canvas.drawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((lastMovementPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                }else{
+                    ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((lastMovementPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, canvas)
+                    canvas.drawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((lastMovementPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                }
+            }elseif(!hasPerfected){
+                hasPerfected = true
+                ImageDiff(undoList[undoList.length - 1]).apply(canvas)
+                undoList.removeAt(undoList.length - 1)
+                undoList.add(new ImageDiff())
+                ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((lastMovementPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((lastMovementPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, canvas)
+                canvas.drawLine(int((pointerDownPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((pointerDownPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((lastMovementPosition.x - libellus.get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((lastMovementPosition.y - libellus.get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                lastPerfectedTimestamp = time.now()
+            }
+        }
+    }
+
+}

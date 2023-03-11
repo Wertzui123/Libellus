@@ -6,26 +6,10 @@ class ImageDiff {
 
     property map<int, map<int, Color>> previousPixels = {}
 
-    method apply(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas) returns ImageDiff{
+    method apply(ICanvas canvas) returns ImageDiff{
         var map<int, map<int, Color>> newPreviousPixels = {}
         var list<list<int>> chunksLoaded = []
-        if(canvas oftype Canvas){
-            foreach(previousPixels as y => row){
-                newPreviousPixels[y] = {}
-                foreach(row as x => color){
-                    newPreviousPixels[y][x] = Canvas(canvas).getPixel(x, y)
-                    Canvas(canvas).setPixel(x, y, color, false)
-                }
-            }
-        }elseif(canvas oftype ChunkedCanvas){
-            foreach(previousPixels as y => row){
-                newPreviousPixels[y] = {}
-                foreach(row as x => color){
-                    newPreviousPixels[y][x] = ChunkedCanvas(canvas).getPixel(x, y)
-                    ChunkedCanvas(canvas).setPixel(x, y, color, false)
-                }
-            }
-        }elseif(canvas oftype LazyChunkedCanvas){
+        if(canvas oftype LazyChunkedCanvas){
             foreach(previousPixels as y => row){
                 newPreviousPixels[y] = {}
                 foreach(row as x => color){
@@ -37,29 +21,31 @@ class ImageDiff {
                     LazyChunkedCanvas(canvas).setPixel(x, y, color, false)
                 }
             }
-        }
-        foreach(chunksLoaded as chunk){
-            LazyChunkedCanvas(canvas).unloadChunk(chunk[0], chunk[1])
+            foreach(chunksLoaded as chunk){
+                LazyChunkedCanvas(canvas).unloadChunk(chunk[0], chunk[1])
+            }
+        }else{
+            foreach(previousPixels as y => row){
+                newPreviousPixels[y] = {}
+                foreach(row as x => color){
+                    newPreviousPixels[y][x] = canvas.getPixel(x, y)
+                    canvas.setPixel(x, y, color, false)
+                }
+            }
         }
         var newDiff = new ImageDiff()
         newDiff.previousPixels = newPreviousPixels
         return newDiff
     }
 
-    method track(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y){
+    method track(ICanvas canvas, int x, int y){
         if(!previousPixels.containsKey(y)){
             previousPixels[y] = {}
         }
         if(previousPixels[y].containsKey(x)){
             return
         }
-        if(canvas oftype Canvas){
-            previousPixels[y][x] = Canvas(canvas).getPixel(x, y)
-        }elseif(canvas oftype ChunkedCanvas){
-            previousPixels[y][x] = ChunkedCanvas(canvas).getPixel(x, y)
-        }elseif(canvas oftype LazyChunkedCanvas){
-            previousPixels[y][x] = LazyChunkedCanvas(canvas).getPixel(x, y)
-        }
+        previousPixels[y][x] = canvas.getPixel(x, y)
     }
 
     method trackIfNotNone(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y){
@@ -83,7 +69,7 @@ class ImageDiff {
         */
     }
 
-    method trackDrawLine(int x1, int y1, int x2, int y2, int thickness, Canvas|ChunkedCanvas|LazyChunkedCanvas canvas){
+    method trackDrawLine(int x1, int y1, int x2, int y2, int thickness, ICanvas canvas){
         var dx = x2 - x1
         var dy = y2 - y1
         var adx = int(math.abs(double(dx)))
@@ -129,7 +115,7 @@ class ImageDiff {
         }
     }
 
-    method trackFillCircle(Ellipse circle, Canvas|ChunkedCanvas|LazyChunkedCanvas canvas){
+    method trackFillCircle(Ellipse circle, ICanvas canvas){
         var i = -int(circle.size.width)
         while(i < int(circle.size.width)) {
             var j = -int(circle.size.height)
@@ -144,7 +130,7 @@ class ImageDiff {
     }
 
     // TODO: Remove this method; it is currently here for performance reasons because trackFillCircle is too slow
-    method trackFillCircleRectangular(Ellipse circle, Canvas|ChunkedCanvas|LazyChunkedCanvas canvas){
+    method trackFillCircleRectangular(Ellipse circle, ICanvas canvas){
         var i = -int(circle.size.width)
         while(i < int(circle.size.width)) {
             var j = -int(circle.size.height)

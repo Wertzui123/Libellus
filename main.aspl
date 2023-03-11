@@ -6,6 +6,7 @@ import time
 import io
 import libellus.utils
 import json
+import time
 
 var int UNDO_REDO_LIMIT = 30
 
@@ -336,18 +337,38 @@ window.onMouseMove = callback(Point position, float deltaX, float deltaY) {
                         }
                     }
                 }elseif(pen oftype Pen){
-                    if(AppState:zone == Zone.Canvas){
-                        $if !legacyUndoRedo{
-                            ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
+                    if(!LinePerfectionUtils:hasPerfected){
+                        if(!LinePerfectionUtils:isPointerDown){
+                            LinePerfectionUtils:pointerDownPosition = new Point(position.x - deltaX, position.y - deltaY)
+                            LinePerfectionUtils:isPointerDown = true
+                            LinePerfectionUtils:cumulativeMovementX = 0
+                            LinePerfectionUtils:cumulativeMovementY = 0
                         }
-                        booklet.canvas.drawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                        LinePerfectionUtils:lastMovementTimestamp = time.now()
+                        LinePerfectionUtils:lastMovementPosition = position
+                        LinePerfectionUtils:cumulativeMovementX += deltaX
+                        LinePerfectionUtils:cumulativeMovementY += deltaY
+                        if(LinePerfectionUtils:cumulativeMovementX >= 3 || LinePerfectionUtils:cumulativeMovementY >= 3){
+                            LinePerfectionUtils:cumulativeMovementX = 0
+                            LinePerfectionUtils:cumulativeMovementY = 0
+                            LinePerfectionUtils:lastMovementTimestamp = time.now()
+                        }
+                        if(AppState:zone == Zone.Canvas){
+                            $if !legacyUndoRedo{
+                                ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
+                            }
+                            booklet.canvas.drawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
 
-                        // automatically resize canvas when drawing near the edge
-                        if((booklet.canvas.width < ((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
-                            booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                            // automatically resize canvas when drawing near the edge
+                            if((booklet.canvas.width < ((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
+                                booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                            }
+                        }elseif(AppState:zone == Zone.Sheet){
+                            $if !legacyUndoRedo{
+                                ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, Canvas(Sheet(booklet.currentSheet).canvas))
+                            }
+                            Canvas(Sheet(booklet.currentSheet).canvas).drawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
                         }
-                    }elseif(AppState:zone == Zone.Sheet){
-                        Canvas(Sheet(booklet.currentSheet).canvas).drawLine(int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX - deltaX / AppState:zoom), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY - deltaY / AppState:zoom), int((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
                     }
                 }
                 hasChanged = true
@@ -356,6 +377,17 @@ window.onMouseMove = callback(Point position, float deltaX, float deltaY) {
                     Sheet(booklet.currentSheet).hasChanged = true
                 }
             }
+        }
+    }
+}
+window.onMouseUp = callback(Point position, MouseButton button) {
+    if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
+        if (button == MouseButton.Left) {
+            isMouseDown = false
+
+            LinePerfectionUtils:isPointerDown = false
+            LinePerfectionUtils:hasPerfected = false
+            LinePerfectionUtils:hasPerfectedTwo = false
         }
     }
 }
@@ -847,21 +879,41 @@ window.onTouchMove = callback(list<TouchPoint> points){
                                 }
                             }
                         }elseif(pen oftype Pen){
-                            if(AppState:zone == Zone.Canvas){
-                                $if !legacyUndoRedo{
-                                    ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
+                            if(!LinePerfectionUtils:hasPerfected){
+                                if(!LinePerfectionUtils:isPointerDown){
+                                    LinePerfectionUtils:pointerDownPosition = oldTouchPoints[point.identifier]
+                                    LinePerfectionUtils:isPointerDown = true
+                                    LinePerfectionUtils:cumulativeMovementX = 0
+                                    LinePerfectionUtils:cumulativeMovementY = 0
                                 }
-                                booklet.canvas.drawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
+                                if(LinePerfectionUtils:lastMovementTimestamp == null){
+                                    LinePerfectionUtils:lastMovementTimestamp = time.now()
+                                }
+                                LinePerfectionUtils:lastMovementPosition = point.position
+                                LinePerfectionUtils:pointerId = point.identifier
+                                LinePerfectionUtils:cumulativeMovementX += float(math.abs(double(point.position.x - touchPoints[point.identifier].x)))
+                                LinePerfectionUtils:cumulativeMovementY += float(math.abs(double(point.position.y - touchPoints[point.identifier].y)))
+                                if(LinePerfectionUtils:cumulativeMovementX >= 3 || LinePerfectionUtils:cumulativeMovementY >= 3){
+                                    LinePerfectionUtils:cumulativeMovementX = 0
+                                    LinePerfectionUtils:cumulativeMovementY = 0
+                                    LinePerfectionUtils:lastMovementTimestamp = time.now()
+                                }
+                                if(AppState:zone == Zone.Canvas){
+                                    $if !legacyUndoRedo{
+                                        ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, booklet.canvas)
+                                    }
+                                    booklet.canvas.drawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
 
-                                // automatically resize canvas when drawing near the edge
-                                if((booklet.canvas.width < ((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
-                                    booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                                    // automatically resize canvas when drawing near the edge
+                                    if((booklet.canvas.width < ((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300)) || (booklet.canvas.height < ((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))){
+                                        booklet.canvas.extendTo(int(math.max(double(booklet.canvas.width), double((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX + Pen(pen).thickness + 300))), int(math.max(double(booklet.canvas.height), double((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY + Pen(pen).thickness + 300))))
+                                    }
+                                }elseif(AppState:zone == Zone.Sheet){
+                                    $if !legacyUndoRedo{
+                                        ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, Canvas(Sheet(booklet.currentSheet).canvas))
+                                    }
+                                    Canvas(Sheet(booklet.currentSheet).canvas).drawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
                                 }
-                            }elseif(AppState:zone == Zone.Sheet){
-                                $if !legacyUndoRedo{
-                                    ImageDiff(undoList[undoList.length - 1]).trackDrawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).thickness, Canvas(Sheet(booklet.currentSheet).canvas))
-                                }
-                                Canvas(Sheet(booklet.currentSheet).canvas).drawLine(int((touchPoints[point.identifier].x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((touchPoints[point.identifier].y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), Pen(pen).color, Pen(pen).thickness)
                             }
                         }
                         hasChanged = true
@@ -928,6 +980,14 @@ window.onTouchMove = callback(list<TouchPoint> points){
 window.onTouchUp = callback(list<TouchPoint> points){
     foreach(points as point){
         if(point.changed){
+            if(LinePerfectionUtils:isPointerDown){
+                if(point.identifier == LinePerfectionUtils:pointerId){
+                    LinePerfectionUtils:isPointerDown = false
+                    LinePerfectionUtils:lastMovementTimestamp = null
+                    LinePerfectionUtils:hasPerfected = false
+                    LinePerfectionUtils:hasPerfectedTwo = false
+                }
+            }
             if(point.position.x > get_booklet_list_width(window) && point.position.y > get_toolbar_height(window)){
                 if(touchPoints.containsKey(point.identifier)){
                     touchPoints.remove(point.identifier)
@@ -1233,6 +1293,9 @@ window.onPaint = callback(Canvas c) {
             c.drawImage(gridCanvas, get_booklet_list_width(window), get_toolbar_height(window), false) // no blend for performance reasons
         }
         c.drawImage(canv, get_booklet_list_width(window), get_toolbar_height(window))//, false) // no blend for performance reasons
+        if(LinePerfectionUtils:isPointerDown && time.now().milliseconds - LinePerfectionUtils:lastMovementTimestamp?!.milliseconds > 300 && LinePerfectionUtils:cumulativeMovementX < 5 && LinePerfectionUtils:cumulativeMovementY < 5){
+            LinePerfectionUtils:perfectIfApplicable(window, booklet.canvas, pen, undoList)
+        }
     }elseif(AppState:zone == Zone.SheetCollection){
         var y = 10
         var newSheetIcon = newSheetIconOriginal.copy()
@@ -1283,6 +1346,9 @@ window.onPaint = callback(Canvas c) {
         // Do not replace dark ink since we assume sheets always have a white background
         canv.resizeScale(AppState:zoom)
         c.drawImage(canv, get_booklet_list_width(window), get_toolbar_height(window))
+        if(LinePerfectionUtils:isPointerDown && time.now().milliseconds - LinePerfectionUtils:lastMovementTimestamp?!.milliseconds > 300 && LinePerfectionUtils:cumulativeMovementX < 5 && LinePerfectionUtils:cumulativeMovementY < 5){
+            LinePerfectionUtils:perfectIfApplicable(window, Canvas(Sheet(booklet.currentSheet).canvas), pen, undoList)
+        }
     }elseif(AppState:zone == Zone.SheetImporter){
         var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 7d)))
         var color = new Color(255, 0, 0, 0)
