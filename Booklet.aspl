@@ -45,6 +45,7 @@ class Booklet {
         foreach(io.files(string(folder) + "/sheets") as file){
             if(!file.endsWith(".canvas.png") && !sheetPaths.contains(string(folder) + "/sheets/" + string(file))){
                 sheets.add(Sheet:fromFile(string(folder) + "/sheets/" + string(file)))
+                sheetFiles.add(string(file))
             }
         }
         loaded = true
