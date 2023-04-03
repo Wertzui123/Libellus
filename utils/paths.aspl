@@ -2,7 +2,6 @@ import graphics
 
 function clear_path(ICanvas canvas, int x, int y, ImageDiff? diff = null){
     var none = new Color(0, 0, 0, 0)
-    var red = new Color(255, 255, 0, 0)
     var color = canvas.getPixel(x, y)
     if(color.a == none.a && color.r == none.r && color.g == none.g && color.b == none.b){
         return
@@ -28,7 +27,8 @@ function clear_path(ICanvas canvas, int x, int y, ImageDiff? diff = null){
             }else{
                 pixel = canvas.getPixel(pos[0], pos[1])
             }
-            if(pixel.a == color.a && pixel.r == color.r && pixel.g == color.g && pixel.b == color.b){
+            // TODO: if(pixel.r == color.r && pixel.g == color.g && pixel.b == color.b && pixel.a > 0){
+            if(pixel.a > 0){
                 if(diff != null){
                     ImageDiff(diff).track(canvas, pos[0], pos[1])
                 }
