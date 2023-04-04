@@ -10,4 +10,33 @@ class Pen {
         this.thickness = thickness
     }
 
+    [static]
+    method jsonDecodePens(string str) returns list<Pen>{
+        var list<Pen> pens = []
+        var jsonPens = list<any>(json.decode(str))
+        foreach(jsonPens as jsonPen){
+            var Color color = Color:fromRGBA(byte(map<string, any>(map<string, any>(jsonPen)["color"])["r"]), byte(map<string, any>(map<string, any>(jsonPen)["color"])["g"]), byte(map<string, any>(map<string, any>(jsonPen)["color"])["b"]), byte(map<string, any>(map<string, any>(jsonPen)["color"])["a"]))
+            var Pen pen = new Pen(color, int(map<string, any>(jsonPen)["thickness"]))
+            pens.add(pen)
+        }
+        return pens
+    }
+
+    [static]
+    method jsonEncodePens(list<Pen> pens) returns string{
+        var list<any> jsonPens = []
+        foreach(pens as p){
+            var map<string, any> jsonPen = {}
+            jsonPen["thickness"] = p.thickness
+            jsonPen["color"] = map<string, any>{
+                "r" => p.color.r,
+                "g" => p.color.g,
+                "b" => p.color.b,
+                "a" => p.color.a
+            }
+            jsonPens.add(jsonPen)
+        }
+        return json.encode(jsonPens)
+    }
+
 }

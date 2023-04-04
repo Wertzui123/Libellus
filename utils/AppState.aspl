@@ -1,5 +1,6 @@
 import libellus
 import libellus.dialogs
+import graphics
 
 [static]
 class AppState {
@@ -22,5 +23,15 @@ class AppState {
 
     [static]
     property Theme theme = Theme.Light
+
+    [static]
+    property list<Pen> pens
+    [static]
+    property Pen|CircularEraser|PathEraser pen
+
+    [static]
+    method init(){
+        self:pens = [new Pen(new Color(255, 0, 0, 0), 4), new Pen(new Color(255, 255, 0, 0), 4), new Pen(new Color(255, 0, 255, 0), 4), new Pen(new Color(255, 0, 0, 255), 4), new Pen(new Color(255, 255, 255, 0), 4)]
+    }
 
 }

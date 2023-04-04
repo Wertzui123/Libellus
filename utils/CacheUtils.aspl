@@ -1,0 +1,29 @@
+[static]
+class CacheUtils {
+    
+    [static]
+    property bool hasChanged
+    [static]
+    property bool hasChangedForOnPaint
+    [static]
+    property bool hasScrollChanged
+    [static]
+    property bool hasSizeChanged
+    [static]
+    property bool hasSizeChangedForOnPaint
+    [static]
+    property bool hasThemeChanged
+    [static]
+    property bool hasThemeChangedForOnPaint
+    [static]
+    property bool hasGridVisibilityChanged
+    [static]
+    property bool hasGridVisibilityChangedForOnPaint
+    [static]
+    property bool hasUndoAvailabilityChanged
+    [static]
+    property bool hasRedoAvailabilityChanged
+    [static]
+    property bool hasPenColorChanged
+
+}
