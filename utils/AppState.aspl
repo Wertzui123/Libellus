@@ -1,10 +1,13 @@
 import libellus
+import libellus.dialogs
 
 [static]
 class AppState {
     
     [static]
     property Zone zone = Zone.Canvas
+    [static]
+    property Dialog? dialog = null
     
     [static]
     property int scrollX
@@ -16,5 +19,8 @@ class AppState {
 
     [static]
     property bool gridVisible
+
+    [static]
+    property Theme theme = Theme.Light
 
 }

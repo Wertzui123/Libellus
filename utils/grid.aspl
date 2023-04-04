@@ -3,9 +3,9 @@ import graphics
 import math
 import math.geometry
 
-function draw_grid(Canvas canvas, Theme theme){
+function draw_grid(Canvas canvas){
     var color = new Color(255, 200, 200, 200)
-    if(theme == Theme.Dark){
+    if(AppState:theme == Theme.Dark){
         color = new Color(255, 55, 55, 55)
     }
     var min = float(math.min(double(canvas.width * AppState:zoom / 30f), double(canvas.height * AppState:zoom / 30f)))

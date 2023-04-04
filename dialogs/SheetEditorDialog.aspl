@@ -1,0 +1,84 @@
+import graphics
+import math.geometry
+import io
+
+import libellus
+import libellus.utils
+
+class SheetEditorDialog extends Dialog {
+
+    property Window window
+    property Rectangle bounds{
+        get{
+            return new Rectangle(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 2f - (window.width - libellus.get_booklet_list_width(window)) / 4f), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 2f - (window.height - libellus.get_toolbar_height(window)) / 4f)), new Size(float((window.width - libellus.get_booklet_list_width(window)) / 4f * 2), float((window.height - libellus.get_toolbar_height(window)) / 4f * 2)))
+        }
+    }
+
+    property Booklet booklet
+    property Sheet sheet
+    
+    property Rectangle deleteIconBounds{
+        get{
+            var min = float(math.min((window.width - libellus.get_booklet_list_width(window)) / 6d, (window.height - libellus.get_toolbar_height(window)) / 6d))
+            return new Rectangle(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 2f - min / 2f), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 2f - min / 2f)), new Size(min, min))
+        }
+    }
+
+    [static]
+    property Canvas deleteIconOriginal
+    property Canvas deleteIcon
+
+    method construct(Window window, Booklet booklet, Sheet sheet){
+        this.window = window
+        this.booklet = booklet
+        this.sheet = sheet
+
+        if(deleteIconOriginal == null){
+            deleteIconOriginal = Canvas:fromFileData($embed("../icons/delete.png"))
+        }
+    }
+
+    method draw(Canvas canvas){
+        if(deleteIcon == null || deleteIcon.width != deleteIconBounds.size.width || deleteIcon.height != deleteIconBounds.size.height){
+            deleteIcon = deleteIconOriginal.copy()
+            if(AppState:theme == Theme.Dark){
+                deleteIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+            }
+            deleteIcon.resize(int(deleteIconBounds.size.width), int(deleteIconBounds.size.height))
+        }
+
+        if(AppState:theme == Theme.Light){
+            canvas.fillRectangle(bounds, new Color(255, 230, 230, 234))
+        }else{
+            canvas.fillRectangle(bounds, new Color(255, 26, 22, 30))
+        }
+        canvas.drawRectangle(bounds, new Color(255, 64, 64, 64))
+        canvas.drawImage(deleteIcon, int(deleteIconBounds.position.x), int(deleteIconBounds.position.y))
+    }
+
+    method onPointerDown(Point position){
+    }
+
+    method onPointerMove(Point from, Point to){
+    }
+
+    method onPointerUp(Point position){
+        if(position.x > deleteIconBounds.position.x && position.x < deleteIconBounds.position.x + deleteIconBounds.size.width && position.y > deleteIconBounds.position.y && position.y < deleteIconBounds.position.y + deleteIconBounds.size.height){
+            var i = 0
+            foreach(booklet.sheets as s){
+                if(s == sheet){
+                    booklet.sheets.removeAt(i)
+                    booklet.sheetFiles.removeAt(i)
+                    booklet.save()
+                    io.delete_file(sheet.file)
+                    io.delete_file(sheet.file.reverse().split(".", 2)[1].reverse() + ".canvas.png")
+                    break
+                }
+                i++
+            }
+            AppState:dialog = null
+            isInUpAction = true
+        }
+    }
+    
+}

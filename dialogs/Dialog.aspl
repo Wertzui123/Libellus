@@ -1,0 +1,34 @@
+import graphics
+import math.geometry
+import time
+
+[abstract]
+class Dialog {
+
+    [static]
+    property bool isInDownAction
+    [static]
+    property bool isInUpAction
+    [static]
+    property Point? pointerDownPosition
+    [static]
+    property Timestamp? pointerDownTimestamp
+
+    property Rectangle bounds{
+        get{
+        }
+    } // TODO: Mark as abstract when the compiler supports it
+
+    [abstract]
+    method draw(Canvas canvas)
+
+    [abstract]
+    method onPointerDown(Point position)
+
+    [abstract]
+    method onPointerMove(Point from, Point to)
+
+    [abstract]
+    method onPointerUp(Point position)
+    
+}
