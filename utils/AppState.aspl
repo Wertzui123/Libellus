@@ -31,7 +31,7 @@ class AppState {
 
     [static]
     method init(){
-        self:pens = [new Pen(new Color(255, 0, 0, 0), 4), new Pen(new Color(255, 255, 0, 0), 4), new Pen(new Color(255, 0, 255, 0), 4), new Pen(new Color(255, 0, 0, 255), 4), new Pen(new Color(255, 255, 255, 0), 4)]
+        self:pens = [new Pen(Color:fromARGB(255, 0, 0, 0), 4), new Pen(Color:fromARGB(255, 255, 0, 0), 4), new Pen(Color:fromARGB(255, 0, 255, 0), 4), new Pen(Color:fromARGB(255, 0, 0, 255), 4), new Pen(Color:fromARGB(255, 255, 255, 0), 4)]
     }
 
 }

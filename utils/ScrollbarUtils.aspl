@@ -17,11 +17,11 @@ class ScrollbarUtils {
     method renderVerticalScrollbar(Size totalBounds, Canvas c, Window window){
         var bounds = getVerticalScrollbarBounds(totalBounds, window)
         if(bounds != null){
-            c.drawRectangle(Rectangle(bounds), new Color(100, 50, 50, 50))
+            c.drawRectangle(Rectangle(bounds), Color:fromARGB(100, 50, 50, 50))
         }
         var sliderBounds = getVerticalScrollbarSliderBounds(totalBounds, window)
         if(sliderBounds != null){
-            c.fillRectangle(sliderBounds, new Color(50, 100, 100, 100))
+            c.fillRectangle(sliderBounds, Color:fromARGB(50, 100, 100, 100))
         }
     }
 
@@ -29,11 +29,11 @@ class ScrollbarUtils {
     method renderHorizontalScrollbar(Size totalBounds, Canvas c, Window window){
         var bounds = getHorizontalScrollbarBounds(totalBounds, window)
         if(bounds != null){
-            c.drawRectangle(Rectangle(bounds), new Color(100, 50, 50, 50))
+            c.drawRectangle(Rectangle(bounds), Color:fromARGB(100, 50, 50, 50))
         }
         var sliderBounds = getHorizontalScrollbarSliderBounds(totalBounds, window)
         if(sliderBounds != null){
-            c.fillRectangle(sliderBounds, new Color(50, 100, 100, 100))
+            c.fillRectangle(sliderBounds, Color:fromARGB(50, 100, 100, 100))
         }
     }
 

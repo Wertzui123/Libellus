@@ -42,17 +42,17 @@ class SheetEditorDialog extends Dialog {
         if(deleteIcon == null || deleteIcon.width != deleteIconBounds.size.width || deleteIcon.height != deleteIconBounds.size.height){
             deleteIcon = deleteIconOriginal.copy()
             if(AppState:theme == Theme.Dark){
-                deleteIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+                deleteIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
             }
             deleteIcon.resize(int(deleteIconBounds.size.width), int(deleteIconBounds.size.height))
         }
 
         if(AppState:theme == Theme.Light){
-            canvas.fillRectangle(bounds, new Color(255, 230, 230, 234))
+            canvas.fillRectangle(bounds, Color:fromARGB(255, 230, 230, 234))
         }else{
-            canvas.fillRectangle(bounds, new Color(255, 26, 22, 30))
+            canvas.fillRectangle(bounds, Color:fromARGB(255, 26, 22, 30))
         }
-        canvas.drawRectangle(bounds, new Color(255, 64, 64, 64))
+        canvas.drawRectangle(bounds, Color:fromARGB(255, 64, 64, 64))
         canvas.drawImage(deleteIcon, int(deleteIconBounds.position.x), int(deleteIconBounds.position.y))
     }
 

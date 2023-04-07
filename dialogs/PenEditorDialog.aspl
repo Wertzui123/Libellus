@@ -26,16 +26,16 @@ class PenEditorDialog extends Dialog {
     }
 
     property list<Color> colors = [
-        new Color(255, 0, 0, 0),
-        new Color(255, 128, 128, 128),
-        new Color(255, 255, 0, 0),
-        new Color(255, 128, 0, 0),
-        new Color(255, 0, 255, 0),
-        new Color(255, 0, 128, 0),
-        new Color(255, 0, 0, 255),
-        new Color(255, 0, 0, 128),
-        new Color(255, 255, 255, 0),
-        new Color(255, 255, 165, 0)
+        Color:fromARGB(255, 0, 0, 0),
+        Color:fromARGB(255, 128, 128, 128),
+        Color:fromARGB(255, 255, 0, 0),
+        Color:fromARGB(255, 128, 0, 0),
+        Color:fromARGB(255, 0, 255, 0),
+        Color:fromARGB(255, 0, 128, 0),
+        Color:fromARGB(255, 0, 0, 255),
+        Color:fromARGB(255, 0, 0, 128),
+        Color:fromARGB(255, 255, 255, 0),
+        Color:fromARGB(255, 255, 165, 0)
     ]
 
     property Pen pen
@@ -48,15 +48,15 @@ class PenEditorDialog extends Dialog {
 
     method draw(Canvas canvas){
         if(AppState:theme == Theme.Light){
-            canvas.fillRectangle(bounds, new Color(255, 230, 230, 234))
+            canvas.fillRectangle(bounds, Color:fromARGB(255, 230, 230, 234))
         }else{
-            canvas.fillRectangle(bounds, new Color(255, 26, 22, 30))
+            canvas.fillRectangle(bounds, Color:fromARGB(255, 26, 22, 30))
         }
-        canvas.drawRectangle(bounds, new Color(255, 64, 64, 64))
+        canvas.drawRectangle(bounds, Color:fromARGB(255, 64, 64, 64))
         repeat(5, i = 1){
             var color = colors[i - 1]
             if(AppState:theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
-                color = new Color(255, 255, 255, 255)
+                color = Color:fromARGB(255, 255, 255, 255)
             }
             canvas.fillCircle(new Ellipse(
                 new Point(
@@ -72,7 +72,7 @@ class PenEditorDialog extends Dialog {
         repeat(5, i = 1){
             var color = colors[i - 1 + 5]
             if(AppState:theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
-                color = new Color(255, 255, 255, 255)
+                color = Color:fromARGB(255, 255, 255, 255)
             }
             canvas.fillCircle(new Ellipse(
                 new Point(
@@ -86,9 +86,9 @@ class PenEditorDialog extends Dialog {
                 color)
         }
         repeat(5, i = 1){
-            var color = new Color(255, 200, 200, 200)
+            var color = Color:fromARGB(255, 200, 200, 200)
             if(pen.thickness == i + 1){
-                color = new Color(255, 235, 235, 255)
+                color = Color:fromARGB(255, 235, 235, 255)
             }
             canvas.fillCircle(new Ellipse(
                 new Point(
@@ -110,7 +110,7 @@ class PenEditorDialog extends Dialog {
                             float((i / 2f) * (window.width - libellus.get_booklet_list_width(window)) / 16f / 8),
                             float((i / 2f) * (window.height - libellus.get_toolbar_height(window)) / 16f / 8))
                     ),
-                    new Color(255, 0, 0, 0))
+                    Color:fromARGB(255, 0, 0, 0))
             }
         }
     }

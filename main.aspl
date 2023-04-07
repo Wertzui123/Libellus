@@ -20,27 +20,27 @@ if(!io.exists_directory(Booklet:getBookletsPath())){
 foreach([
     map<string, any>{
         "name" => "Libellus",
-        "color" => new Color(255, 249, 186, 5)
+        "color" => Color:fromARGB(255, 249, 186, 5)
     },
     map<string, any>{
         "name" => "English",
-        "color" => new Color(255, 0, 255, 0)
+        "color" => Color:fromARGB(255, 0, 255, 0)
     },
     map<string, any>{
         "name" => "German",
-        "color" => new Color(255, 0, 0, 255)
+        "color" => Color:fromARGB(255, 0, 0, 255)
     },
     map<string, any>{
         "name" => "History",
-        "color" => new Color(255, 128, 64, 64)
+        "color" => Color:fromARGB(255, 128, 64, 64)
     },
     map<string, any>{
         "name" => "Math",
-        "color" => new Color(255, 255, 0, 0)
+        "color" => Color:fromARGB(255, 255, 0, 0)
     },
     map<string, any>{
         "name" => "Physics",
-        "color" => new Color(255, 255, 255, 0)
+        "color" => Color:fromARGB(255, 255, 255, 0)
     }
 ] as b){
     var create = false
@@ -65,7 +65,7 @@ if(!io.exists_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))){
     bookletName = io.read_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))
 }
 var list<Booklet> booklets = []
-var Booklet booklet = new Booklet("Notes", new Color(255, 249, 186, 5), new LazyChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window), io.join_path([Booklet:getBookletsPath(), "Notes", "chunks"])), [], 0, 0)
+var Booklet booklet = new Booklet("Notes", Color:fromARGB(255, 249, 186, 5), new LazyChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window), io.join_path([Booklet:getBookletsPath(), "Notes", "chunks"])), [], 0, 0)
 var hasAnySelected = false
 var bookletFolders = utils.sort_alphabetically(io.directories(Booklet:getBookletsPath()))
 {
@@ -103,7 +103,7 @@ foreach(bookletFolders as folder){
             scrollX = int(map<string, any>(map<string, any>(data)["scroll"])["x"])
             scrollY = int(map<string, any>(map<string, any>(data)["scroll"])["y"])
         }
-        var Booklet b = new Booklet(io.directory_name(folder), new Color(255, byte(map<string, any>(map<string, any>(data)["color"])["r"]), byte(map<string, any>(map<string, any>(data)["color"])["g"]), byte(map<string, any>(map<string, any>(data)["color"])["b"])), c, sheetFiles, scrollX, scrollY)
+        var Booklet b = new Booklet(io.directory_name(folder), Color:fromARGB(255, byte(map<string, any>(map<string, any>(data)["color"])["r"]), byte(map<string, any>(map<string, any>(data)["color"])["g"]), byte(map<string, any>(map<string, any>(data)["color"])["b"])), c, sheetFiles, scrollX, scrollY)
         if(b.name == bookletName){
             booklet = b
             booklet.prepare()
@@ -240,12 +240,12 @@ window.onMouseDown = callback(Point position, MouseButton button) {
                         $if !legacyUndoRedo{
                             ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), booklet.canvas)
                         }
-                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                     }elseif(AppState:zone == Zone.Sheet){
                         $if !legacyUndoRedo{
                             ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Canvas(Sheet(booklet.currentSheet).canvas))
                         }
-                        Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                     }
                 }elseif(AppState:pen == pathEraser){
                     if(AppState:zone == Zone.Canvas){
@@ -301,12 +301,12 @@ window.onMouseMove = callback(Point position, float deltaX, float deltaY) {
                         $if !legacyUndoRedo{
                             ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), booklet.canvas)
                         }
-                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        booklet.canvas.fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                     }elseif(AppState:zone == Zone.Sheet){
                         $if !legacyUndoRedo{
                             ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX , (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Canvas(Sheet(booklet.currentSheet).canvas))
                         }
-                        Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                        Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                     }
                 }elseif(AppState:pen == pathEraser){
                     if(AppState:zone == Zone.Canvas){
@@ -656,9 +656,9 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                 }
             }elseif(AppState:zone == Zone.SheetImporter){
                 var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 7d)))
-                var color = new Color(255, 0, 0, 0)
+                var color = Color:fromARGB(255, 0, 0, 0)
                 if(AppState:theme == Theme.Dark){
-                    color = new Color(255, 255, 255, 255)
+                    color = Color:fromARGB(255, 255, 255, 255)
                 }
                 var ls = utils.ls(sheetImporterPath, [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".hdr"])
                 var i = 0
@@ -834,12 +834,12 @@ window.onTouchDown = callback(list<TouchPoint> points){
                                 $if !legacyUndoRedo{
                                     ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), booklet.canvas)
                                 }
-                                booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                                booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                             }elseif(AppState:zone == Zone.Sheet){
                                 $if !legacyUndoRedo{
                                     ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Canvas(Sheet(booklet.currentSheet).canvas))
                                 }
-                                Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                                Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                             }
                         }elseif(AppState:pen == pathEraser){
                             if(AppState:zone == Zone.Canvas){
@@ -905,12 +905,12 @@ window.onTouchMove = callback(list<TouchPoint> points){
                                     $if !legacyUndoRedo{
                                         ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), booklet.canvas)
                                     }
-                                    booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                                    booklet.canvas.fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                                 }elseif(AppState:zone == Zone.Sheet){
                                     $if !legacyUndoRedo{
                                         ImageDiff(undoList[undoList.length - 1]).trackFillCircleRectangular(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Canvas(Sheet(booklet.currentSheet).canvas))
                                     }
-                                    Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), new Color(0, 0, 0, 0), false)
+                                    Canvas(Sheet(booklet.currentSheet).canvas).fillCircle(new Ellipse(new Point((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX, (point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), new Size(float(CircularEraser(AppState:pen).thickness / 2), float(CircularEraser(AppState:pen).thickness / 2))), Color:fromARGB(0, 0, 0, 0), false)
                                 }
                             }elseif(AppState:pen == pathEraser){
                                 if(AppState:zone == Zone.Canvas){
@@ -1317,9 +1317,9 @@ window.onTouchUp = callback(list<TouchPoint> points){
                 }
             }elseif(AppState:zone == Zone.SheetImporter){
                 var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 7d)))
-                var color = new Color(255, 0, 0, 0)
+                var color = Color:fromARGB(255, 0, 0, 0)
                 if(AppState:theme == Theme.Dark){
-                    color = new Color(255, 255, 255, 255)
+                    color = Color:fromARGB(255, 255, 255, 255)
                 }
                 var ls = utils.ls(sheetImporterPath, [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".hdr"])
                 var i = 0
@@ -1381,24 +1381,24 @@ window.onKeyPress = callback(KeyCode key) {
 var logo = new Canvas(1, 1)
 window.onPaint = callback(Canvas c) {
     if(AppState:theme == Theme.Light){
-        c.fill(new Color(255, 255, 255, 255), false) // no blend for performance reasons
+        c.fill(Color:fromARGB(255, 255, 255, 255), false) // no blend for performance reasons
     }else{
-        c.fill(new Color(255, 20, 20, 20), false) // no blend for performance reasons
+        c.fill(Color:fromARGB(255, 20, 20, 20), false) // no blend for performance reasons
     }
     if(AppState:zone == Zone.Canvas){
         booklet.canvas.requireArea(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(booklet.canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(booklet.canvas.height - AppState:scrollY))))
         var canv = booklet.canvas.getSubImage(AppState:scrollX, AppState:scrollY, int(math.min(double(window.width - get_booklet_list_width(window)) / AppState:zoom, double(booklet.canvas.width - AppState:scrollX))), int(math.min(double(window.height - get_toolbar_height(window)) / AppState:zoom, double(booklet.canvas.height - AppState:scrollY))))
         if(AppState:theme == Theme.Dark){
-            //canv.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255), false) // no blend for performance reasons
-            canv.replaceColorIgnoreAlpha(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+            //canv.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255), false) // no blend for performance reasons
+            canv.replaceColorIgnoreAlpha(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
         }
         canv.resizeScale(AppState:zoom)
         if(AppState:gridVisible){
             var gridCanvas = new Canvas(canv.width, canv.height)
             if(AppState:theme == Theme.Light){
-                gridCanvas.fill(new Color(255, 255, 255, 255), false) // no blend for performance reasons
+                gridCanvas.fill(Color:fromARGB(255, 255, 255, 255), false) // no blend for performance reasons
             }elseif(AppState:theme == Theme.Dark){
-                gridCanvas.fill(new Color(255, 20, 20, 20), false) // no blend for performance reasons
+                gridCanvas.fill(Color:fromARGB(255, 20, 20, 20), false) // no blend for performance reasons
             }
             utils.draw_grid(gridCanvas)
             c.drawImage(gridCanvas, get_booklet_list_width(window), get_toolbar_height(window), false) // no blend for performance reasons
@@ -1411,7 +1411,7 @@ window.onPaint = callback(Canvas c) {
         var y = 10
         var newSheetIcon = newSheetIconOriginal.copy()
         if(AppState:theme == Theme.Dark){
-            newSheetIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+            newSheetIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
         }
         newSheetIcon.resize(int(math.sqrt(double(window.width * window.height)) / 6), int(math.sqrt(double(window.width * window.height)) / 6))
         var drawSheets = false
@@ -1432,7 +1432,7 @@ window.onPaint = callback(Canvas c) {
                     img = Canvas(sheet.canvas).copy()
                     img.resize(imgWidth, imgHeight)
                     c.drawImage(img, get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX, get_toolbar_height(window) + y - AppState:scrollY)
-                    c.drawRectangle(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX) - 1, float(get_toolbar_height(window) + y - AppState:scrollY) - 1), new Size(float(img.width) + 2, float(img.height) + 2)), new Color(255, 0, 0, 0)) // TODO: The rectangle is sometimes off a a bit (1 pixel too wide and the upper left corner is 1 pixel too high)
+                    c.drawRectangle(new Rectangle(new Point(float(get_booklet_list_width(window) + int((window.width - get_booklet_list_width(window)) / 2f - img.width / 2f) - AppState:scrollX) - 1, float(get_toolbar_height(window) + y - AppState:scrollY) - 1), new Size(float(img.width) + 2, float(img.height) + 2)), Color:fromARGB(255, 0, 0, 0)) // TODO: The rectangle is sometimes off a a bit (1 pixel too wide and the upper left corner is 1 pixel too high)
                 }else{
                     sheet.unload(false)
                 }
@@ -1476,9 +1476,9 @@ window.onPaint = callback(Canvas c) {
         }
     }elseif(AppState:zone == Zone.SheetImporter){
         var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 7d)))
-        var color = new Color(255, 0, 0, 0)
+        var color = Color:fromARGB(255, 0, 0, 0)
         if(AppState:theme == Theme.Dark){
-            color = new Color(255, 255, 255, 255)
+            color = Color:fromARGB(255, 255, 255, 255)
         }
         var ls = utils.ls(sheetImporterPath, [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".hdr"])
         var i = 0
@@ -1493,7 +1493,7 @@ window.onPaint = callback(Canvas c) {
         if(imageFileIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint || CacheUtils:hasSizeChangedForOnPaint){
             imageFileIcon = Canvas:fromFileData($embed("icons/image_file.png"))
             if(AppState:theme == Theme.Dark){
-                imageFileIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+                imageFileIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
             }
             imageFileIcon.resize(int(factor * 0.8), int(factor * 0.8))
         }
@@ -1513,11 +1513,11 @@ window.onPaint = callback(Canvas c) {
         }
     }
     if(AppState:theme == Theme.Light){
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 230, 230, 234), false) // no blend for performance reasons
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 230, 230, 234), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), Color:fromARGB(255, 230, 230, 234), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), Color:fromARGB(255, 230, 230, 234), false) // no blend for performance reasons
     }elseif(AppState:theme == Theme.Dark){
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), new Color(255, 26, 22, 30), false) // no blend for performance reasons
-        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), new Color(255, 26, 22, 30), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(window.width + get_booklet_list_width(window)), float(get_toolbar_height(window)))), Color:fromARGB(255, 26, 22, 30), false) // no blend for performance reasons
+        c.fillRectangle(new Rectangle(new Point(0, 0), new Size(float(get_booklet_list_width(window)), float(window.height))), Color:fromARGB(255, 26, 22, 30), false) // no blend for performance reasons
     }
 
     var i = 0
@@ -1526,9 +1526,9 @@ window.onPaint = callback(Canvas c) {
             var icon = Canvas:fromFileData(penIconData)
             var color = p.color
             if(AppState:theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
-                color = new Color(255, 255, 255, 255)
+                color = Color:fromARGB(255, 255, 255, 255)
             }
-            icon.replaceColor(new Color(255, 128, 128, 128), color)
+            icon.replaceColor(Color:fromARGB(255, 128, 128, 128), color)
             icon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
             penIcons.add(icon)
         }
@@ -1536,18 +1536,18 @@ window.onPaint = callback(Canvas c) {
             var icon = Canvas:fromFileData(penIconData)
             var color = p.color
             if(AppState:theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
-                color = new Color(255, 255, 255, 255)
+                color = Color:fromARGB(255, 255, 255, 255)
             }
-            icon.replaceColor(new Color(255, 128, 128, 128), color)
+            icon.replaceColor(Color:fromARGB(255, 128, 128, 128), color)
             icon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
             penIcons[i] = icon
         }
         var penIcon = penIcons[i]
         if(p == AppState:pen){
             if(AppState:theme == Theme.Light){
-                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), new Color(255, 210, 210, 210))
+                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), Color:fromARGB(255, 210, 210, 210))
             }elseif(AppState:theme == Theme.Dark){
-                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), new Color(50, 230, 230, 230))
+                c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2) + penIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(penIcon.width * 0.75), float(penIcon.height * 0.75))), Color:fromARGB(50, 230, 230, 230))
             }
         }
         c.drawImage(penIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - penIcon.width / 2), int(get_toolbar_height(window) / 2 - penIcon.height / 2))
@@ -1560,9 +1560,9 @@ window.onPaint = callback(Canvas c) {
     }
     if(AppState:pen == circularEraser){
         if(AppState:theme == Theme.Light){
-            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) + circularEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(circularEraserIcon.width * 0.75), float(circularEraserIcon.height * 0.75))), new Color(255, 210, 210, 210))
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) + circularEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(circularEraserIcon.width * 0.75), float(circularEraserIcon.height * 0.75))), Color:fromARGB(255, 210, 210, 210))
         }elseif(AppState:theme == Theme.Dark){
-            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) + circularEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(circularEraserIcon.width * 0.75), float(circularEraserIcon.height * 0.75))), new Color(50, 230, 230, 230))
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2) + circularEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(circularEraserIcon.width * 0.75), float(circularEraserIcon.height * 0.75))), Color:fromARGB(50, 230, 230, 230))
         }
     }
     c.drawImage(circularEraserIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - circularEraserIcon.width / 2), int(get_toolbar_height(window) / 2 - circularEraserIcon.height / 2))
@@ -1571,9 +1571,9 @@ window.onPaint = callback(Canvas c) {
         if(AppState:pen == circularEraser && currentMousePosition != null){
             if(currentMousePosition.x > get_booklet_list_width(window) && currentMousePosition.y > get_toolbar_height(window)){
                 if(AppState:theme == Theme.Light){
-                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(circularEraser.thickness / 2), float(circularEraser.thickness / 2))), new Color(128, 210, 210, 210))
+                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(circularEraser.thickness / 2), float(circularEraser.thickness / 2))), Color:fromARGB(128, 210, 210, 210))
                 }elseif(AppState:theme == Theme.Dark){
-                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(circularEraser.thickness / 2), float(circularEraser.thickness / 2))), new Color(128, 230, 230, 230))
+                    c.fillCircle(new Ellipse(new Point(float(currentMousePosition.x), float(currentMousePosition.y)), new Size(float(circularEraser.thickness / 2), float(circularEraser.thickness / 2))), Color:fromARGB(128, 230, 230, 230))
                 }
             }
         }
@@ -1582,14 +1582,14 @@ window.onPaint = callback(Canvas c) {
     i++
     if(CacheUtils:hasSizeChangedForOnPaint || pathEraserIcon.width == 1){
         pathEraserIcon = Canvas:fromFileData($embed("icons/pen.png"))
-        pathEraserIcon.replaceColor(new Color(255, 128, 128, 128), new Color(255, 255, 192, 203))
+        pathEraserIcon.replaceColor(Color:fromARGB(255, 128, 128, 128), Color:fromARGB(255, 255, 192, 203))
         pathEraserIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
     }
     if(AppState:pen == pathEraser){
         if(AppState:theme == Theme.Light){
-            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) + pathEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(pathEraserIcon.width * 0.75), float(pathEraserIcon.height * 0.75))), new Color(255, 210, 210, 210))
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) + pathEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(pathEraserIcon.width * 0.75), float(pathEraserIcon.height * 0.75))), Color:fromARGB(255, 210, 210, 210))
         }elseif(AppState:theme == Theme.Dark){
-            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) + pathEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(pathEraserIcon.width * 0.75), float(pathEraserIcon.height * 0.75))), new Color(50, 210, 210, 210))
+            c.fillCircle(new Ellipse(new Point(float(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2) + pathEraserIcon.width / 2, float(get_toolbar_height(window) / 2)), new Size(float(pathEraserIcon.width * 0.75), float(pathEraserIcon.height * 0.75))), Color:fromARGB(50, 210, 210, 210))
         }
     }
     c.drawImage(pathEraserIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - pathEraserIcon.width / 2), int(get_toolbar_height(window) / 2 - pathEraserIcon.height / 2))
@@ -1599,10 +1599,10 @@ window.onPaint = callback(Canvas c) {
         undoIcon = undoIconOriginal.copy()
         if(undoList.length > 0){
             if(AppState:theme == Theme.Dark){
-                undoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+                undoIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
             }
         }else{
-            undoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 128, 128, 128))
+            undoIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 128, 128, 128))
         }
         undoIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
     }
@@ -1615,10 +1615,10 @@ window.onPaint = callback(Canvas c) {
         redoIcon = redoIconOriginal.copy()
         if(redoList.length > 0){
             if(AppState:theme == Theme.Dark){
-                redoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+                redoIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
             }
         }else{
-            redoIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 128, 128, 128))
+            redoIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 128, 128, 128))
         }
         redoIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
     }
@@ -1631,7 +1631,7 @@ window.onPaint = callback(Canvas c) {
     if(imageImporterIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint || CacheUtils:hasSizeChangedForOnPaint){
         imageImporterIcon = Canvas:fromFileData($embed("icons/image_importer.png"))
         if(AppState:theme == Theme.Dark){
-            imageImporterIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+            imageImporterIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
         }
         imageImporterIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
     }
@@ -1647,13 +1647,13 @@ window.onPaint = callback(Canvas c) {
     if(CacheUtils:hasSizeChangedForOnPaint || bookletIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
         bookletIcon = Canvas:fromFileData($embed("icons/booklet.png"))
         if(AppState:theme == Theme.Dark){
-            bookletIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 200, 200, 200))
+            bookletIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 200, 200, 200))
         }
         bookletIcon.resize(int(get_toolbar_height(window) * 0.2), int(get_toolbar_height(window) * 0.2))
     }
-    var textColor = new Color(255, 0, 0, 0)
+    var textColor = Color:fromARGB(255, 0, 0, 0)
     if(AppState:theme == Theme.Dark){
-        textColor = new Color(255, 255, 255, 255)
+        textColor = Color:fromARGB(255, 255, 255, 255)
     }
     var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 30d, 10d))).asUnderlined()
     c.drawText("Booklets", int(get_booklet_list_width(window) / 2), get_toolbar_height(window), font, textColor, HorizontalAlignment.Center, VerticalAlignment.Top)
@@ -1680,7 +1680,7 @@ window.onPaint = callback(Canvas c) {
         if(CacheUtils:hasSizeChangedForOnPaint || gridToggleIcon.width == 1 || CacheUtils:hasGridVisibilityChangedForOnPaint || CacheUtils:hasThemeChangedForOnPaint){
             gridToggleIcon = Canvas:fromFileData($embed("icons/grid.png"))
             if(AppState:theme == Theme.Dark){
-                gridToggleIcon.replaceColor(new Color(255, 0, 0, 0), new Color(255, 255, 255, 255))
+                gridToggleIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
             }
             gridToggleIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
         }
@@ -1743,9 +1743,9 @@ window.onPaint = callback(Canvas c) {
     }
 
     $if showFPS{
-        var fpsColor = new Color(255, 0, 0, 0)
+        var fpsColor = Color:fromARGB(255, 0, 0, 0)
         if(AppState:theme == Theme.Dark){
-            fpsColor = new Color(255, 255, 255, 255)
+            fpsColor = Color:fromARGB(255, 255, 255, 255)
         }
         c.drawText("FPS: " + window.fps, 0, 0, Font:default.withSize(10), fpsColor, HorizontalAlignment.Left, VerticalAlignment.Top)
     }

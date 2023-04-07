@@ -1,7 +1,7 @@
 import graphics
 
 function clear_path(ICanvas canvas, int x, int y, ImageDiff? diff = null){
-    var none = new Color(0, 0, 0, 0)
+    var none = Color:fromARGB(0, 0, 0, 0)
     var color = canvas.getPixel(x, y)
     if(color.a == none.a && color.r == none.r && color.g == none.g && color.b == none.b){
         return
