@@ -5,29 +5,38 @@ import time
 [abstract]
 class Dialog {
 
+    [public]
     [static]
     property bool isInDownAction
+    [public]
     [static]
     property bool isInUpAction
+    [public]
     [static]
     property Point? pointerDownPosition
+    [public]
     [static]
     property Timestamp? pointerDownTimestamp
 
+    [public]
     property Rectangle bounds{
         get{
         }
     } // TODO: Mark as abstract when the compiler supports it
 
+    [public]
     [abstract]
     method draw(Canvas canvas)
 
+    [public]
     [abstract]
     method onPointerDown(Point position)
 
+    [public]
     [abstract]
     method onPointerMove(Point from, Point to)
 
+    [public]
     [abstract]
     method onPointerUp(Point position)
     

@@ -10,6 +10,7 @@ class PenEditorDialog extends Dialog {
     // TODO: Add a color picker
 
     property Window window
+    [public]
     property Rectangle bounds{
         get{
             return new Rectangle(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 2f - (window.width - libellus.get_booklet_list_width(window)) / 4f), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 2f - (window.height - libellus.get_toolbar_height(window)) / 4f)), new Size(float((window.width - libellus.get_booklet_list_width(window)) / 4f * 2), float((window.height - libellus.get_toolbar_height(window)) / 4f * 2)))
@@ -40,12 +41,14 @@ class PenEditorDialog extends Dialog {
 
     property Pen pen
 
+    [public]
     method construct(Window window, Booklet booklet, Pen pen){
         this.window = window
         this.booklet = booklet
         this.pen = pen
     }
 
+    [public]
     method draw(Canvas canvas){
         if(AppState:theme == Theme.Light){
             canvas.fillRectangle(bounds, Color:fromARGB(255, 230, 230, 234))
@@ -115,12 +118,15 @@ class PenEditorDialog extends Dialog {
         }
     }
 
+    [public]
     method onPointerDown(Point position){
     }
 
+    [public]
     method onPointerMove(Point from, Point to){
     }
 
+    [public]
     method onPointerUp(Point position){
         repeat(5, i = 1){
             if(new Ellipse(

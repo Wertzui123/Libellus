@@ -6,6 +6,7 @@ class ImageDiff {
 
     property map<int, map<int, Color>> previousPixels = {}
 
+    [public]
     method apply(ICanvas canvas) returns ImageDiff{
         var map<int, map<int, Color>> newPreviousPixels = {}
         var list<list<int>> chunksLoaded = []
@@ -38,6 +39,7 @@ class ImageDiff {
         return newDiff
     }
 
+    [public]
     method track(ICanvas canvas, int x, int y){
         if(!previousPixels.containsKey(y)){
             previousPixels[y] = {}
@@ -69,6 +71,7 @@ class ImageDiff {
         */
     }
 
+    [public]
     method trackDrawLine(int x1, int y1, int x2, int y2, int thickness, ICanvas canvas){
         var dx = x2 - x1
         var dy = y2 - y1
@@ -115,6 +118,7 @@ class ImageDiff {
         }
     }
 
+    [public]
     method trackFillCircle(Ellipse circle, ICanvas canvas){
         var i = -int(circle.size.width)
         while(i < int(circle.size.width)) {
@@ -130,6 +134,7 @@ class ImageDiff {
     }
 
     // TODO: Remove this method; it is currently here for performance reasons because trackFillCircle is too slow
+    [public]
     method trackFillCircleRectangular(Ellipse circle, ICanvas canvas){
         var i = -int(circle.size.width)
         while(i < int(circle.size.width)) {

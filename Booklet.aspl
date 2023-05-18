@@ -4,16 +4,26 @@ import json
 
 class Booklet {
     
+    [readpublic]
     property string name
+    [readpublic]
     property Color color
+    [public]
     property LazyChunkedCanvas canvas
+    [public]
     property list<string> sheetFiles
+    [public]
     property list<Sheet> sheets
+    [public]
     property Sheet? currentSheet
+    [public]
     property int scrollX
+    [public]
     property int scrollY
+    [readpublic]
     property bool loaded
 
+    [public]
     method construct(string name, Color color, LazyChunkedCanvas canvas, list<string> sheetFiles, int scrollX, int scrollY) {
         this.name = name
         this.color = color
@@ -23,6 +33,7 @@ class Booklet {
         this.scrollY = scrollY
     }
 
+    [public]
     method prepare(){
         var folder = io.join_path([self:getBookletsPath(), name])
         if(io.exists_file(io.join_path([folder, "canvas.cif"]))){
@@ -53,12 +64,14 @@ class Booklet {
 
     // unprepare unloades the booklet from memory
     // this will automatically save the canvas of the booklet but not the sheets
+    [public]
     method unprepare(){
         loaded = false
         canvas.requireArea(0, 0, 0, 0)
         sheets = []
     }
 
+    [public]
     method save(bool saveOnlyMeta = false){
         var bookletsPath = self:getBookletsPath()
         if(!io.exists_directory(bookletsPath)){
@@ -98,6 +111,7 @@ class Booklet {
         }
     }
 
+    [public]
     [static]
     method getBookletsPath() returns string{
         var bookletsPath = "booklets"

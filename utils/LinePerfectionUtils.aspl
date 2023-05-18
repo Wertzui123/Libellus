@@ -7,30 +7,41 @@ import libellus
 [static]
 class LinePerfectionUtils {
 
+    [public]
     [static]
     property bool isPointerDown
+    [public]
     [static]
     property long pointerId
+    [public]
     [static]
     property Point pointerDownPosition
 
+    [public]
     [static]
     property Timestamp? lastMovementTimestamp
+    [public]
     [static]
     property Point lastMovementPosition
+    [public]
     [static]
     property float cumulativeMovementX
+    [public]
     [static]
     property float cumulativeMovementY
 
+    [public]
     [static]
     property bool hasPerfected
+    [public]
     [static]
     property Timestamp? lastPerfectedTimestamp
 
+    [public]
     [static]
     property bool hasPerfectedTwo
 
+    [public]
     [static]
     method perfectIfApplicable(Window window, ICanvas canvas, list<any> undoList) {
         if(lastMovementTimestamp == null || lastMovementPosition == null) {

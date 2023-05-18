@@ -5,30 +5,41 @@ import graphics
 [static]
 class AppState {
     
+    [public]
     [static]
     property Zone zone = Zone.Canvas
+    [public]
     [static]
     property Dialog? dialog = null
     
+    [public]
     [static]
     property int scrollX
+    [public]
     [static]
     property int scrollY
 
+    [public]
     [static]
     property float zoom = 1
 
+    [public]
     [static]
     property bool gridVisible
 
+    [public]
     [static]
     property Theme theme = Theme.Light
 
+    [public]
     [static]
     property list<Pen> pens
+    [public]
     [static]
     property Pen|CircularEraser|PathEraser pen
 
+
+    [public]
     [static]
     method init(){
         self:pens = [new Pen(Color:fromARGB(255, 0, 0, 0), 4), new Pen(Color:fromARGB(255, 255, 0, 0), 4), new Pen(Color:fromARGB(255, 0, 255, 0), 4), new Pen(Color:fromARGB(255, 0, 0, 255), 4), new Pen(Color:fromARGB(255, 255, 255, 0), 4)]

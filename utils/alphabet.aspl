@@ -1,5 +1,6 @@
 import encoding.ascii
 
+[public]
 function sort_alphabetically(list<string> strings) returns list<string>{
     var list<string> sorted = []
     foreach(strings as s){
@@ -15,6 +16,7 @@ function sort_alphabetically(list<string> strings) returns list<string>{
     return sorted
 }
 
+[public]
 function is_char_smaller_than(string a, string b) returns bool{
     var int i = 0
     while(i < a.length && i < b.length){

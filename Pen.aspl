@@ -2,14 +2,18 @@ import graphics
 
 class Pen {
 
+    [public]
     property Color color
+    [public]
     property int thickness
 
+    [public]
     method construct(Color color, int thickness){
         this.color = color
         this.thickness = thickness
     }
 
+    [public]
     [static]
     method jsonDecodePens(string str) returns list<Pen>{
         var list<Pen> pens = []
@@ -22,6 +26,7 @@ class Pen {
         return pens
     }
 
+    [public]
     [static]
     method jsonEncodePens(list<Pen> pens) returns string{
         var list<any> jsonPens = []

@@ -3,20 +3,29 @@ import math.geometry
 
 class Sheet {
     
+    [readpublic]
     property string name
+    [readpublic]
     property string file
+    [readpublic]
     property Size size
+    [public]
     property Canvas? canvas
+    [public]
     property Canvas? sheetCanvas
+    [readpublic]
     property bool loaded
+    [public]
     property bool hasChanged
 
+    [public]
     method construct(string name, string file, Size size) {
         this.name = name
         this.file = file
         this.size = size
     }
 
+    [public]
     [static]
     method fromFile(string file) returns Sheet{
         var name = file.reverse().split("/", 2)[0].split(".", 2)[1].reverse()
@@ -24,6 +33,7 @@ class Sheet {
         return new self(name, file, size)
     }
 
+    [public]
     method load(){
         if(!loaded) {
             sheetCanvas = Canvas:fromFile(file)
@@ -37,6 +47,7 @@ class Sheet {
         }
     }
 
+    [public]
     method unload(bool save){
         if(loaded) {
             if(save) {
@@ -48,6 +59,7 @@ class Sheet {
         }
     }
 
+    [public]
     method save() {
         Canvas(canvas).save(file.reverse().split(".", 2)[1].reverse() + ".canvas.png")
     }

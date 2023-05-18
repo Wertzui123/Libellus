@@ -8,6 +8,7 @@ import libellus.utils
 class SheetEditorDialog extends Dialog {
 
     property Window window
+    [public]
     property Rectangle bounds{
         get{
             return new Rectangle(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 2f - (window.width - libellus.get_booklet_list_width(window)) / 4f), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 2f - (window.height - libellus.get_toolbar_height(window)) / 4f)), new Size(float((window.width - libellus.get_booklet_list_width(window)) / 4f * 2), float((window.height - libellus.get_toolbar_height(window)) / 4f * 2)))
@@ -28,6 +29,7 @@ class SheetEditorDialog extends Dialog {
     property Canvas deleteIconOriginal
     property Canvas deleteIcon
 
+    [public]
     method construct(Window window, Booklet booklet, Sheet sheet){
         this.window = window
         this.booklet = booklet
@@ -38,6 +40,7 @@ class SheetEditorDialog extends Dialog {
         }
     }
 
+    [public]
     method draw(Canvas canvas){
         if(deleteIcon == null || deleteIcon.width != deleteIconBounds.size.width || deleteIcon.height != deleteIconBounds.size.height){
             deleteIcon = deleteIconOriginal.copy()
@@ -56,12 +59,15 @@ class SheetEditorDialog extends Dialog {
         canvas.drawImage(deleteIcon, int(deleteIconBounds.position.x), int(deleteIconBounds.position.y))
     }
 
+    [public]
     method onPointerDown(Point position){
     }
 
+    [public]
     method onPointerMove(Point from, Point to){
     }
 
+    [public]
     method onPointerUp(Point position){
         if(position.x > deleteIconBounds.position.x && position.x < deleteIconBounds.position.x + deleteIconBounds.size.width && position.y > deleteIconBounds.position.y && position.y < deleteIconBounds.position.y + deleteIconBounds.size.height){
             var i = 0
