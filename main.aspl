@@ -878,6 +878,7 @@ window.onTouchDown = callback(list<TouchPoint> points){
     }
 }
 var map<long, Point> touchPoints = {}
+var map<long, TouchToolType> touchPointToolTypes = {}
 window.onTouchMove = callback(list<TouchPoint> points){
     if(Dialog:isInDownAction){
         return
@@ -897,7 +898,7 @@ window.onTouchMove = callback(list<TouchPoint> points){
                 continue
             }
             if(point.position.x > get_booklet_list_width(window) && point.position.y > get_toolbar_height(window)){
-                if(touchPoints.containsKey(point.identifier)){
+                if(touchPoints.containsKey(point.identifier) && touchPointToolTypes[point.identifier] == point.toolType){
                     if(AppState:zone == Zone.Canvas || AppState:zone == Zone.Sheet){
                         if(point.toolType == TouchToolType.Stylus){
                             if(AppState:pen == circularEraser){
@@ -983,7 +984,7 @@ window.onTouchMove = callback(list<TouchPoint> points){
                             if(booklet.currentSheet != null){
                                 Sheet(booklet.currentSheet).hasChanged = true
                             }
-                        }else{
+                        }elseif(point.toolType == TouchToolType.Finger){
                             if(canBeZoomPoint){
                                 if(math.sqrt(math.pow(double(point.position.x - TouchPoint(previousZoomPoint).position.x), 2) + math.pow(double(point.position.y - TouchPoint(previousZoomPoint).position.y), 2)) > math.sqrt(math.pow(double(oldTouchPoints[point.identifier].x - oldTouchPoints[TouchPoint(previousZoomPoint).identifier].x), 2) + math.pow(double(oldTouchPoints[point.identifier].y - oldTouchPoints[TouchPoint(previousZoomPoint).identifier].y), 2))){
                                     AppState:zoom += 0.01
@@ -1022,6 +1023,7 @@ window.onTouchMove = callback(list<TouchPoint> points){
                     }
                 }
                 touchPoints[point.identifier] = point.position
+                touchPointToolTypes[point.identifier] = point.toolType
             }
         }
     }
@@ -1042,7 +1044,7 @@ window.onTouchMove = callback(list<TouchPoint> points){
 }
 window.onTouchUp = callback(list<TouchPoint> points){
     foreach(points as point){
-        if(point.changed){
+        if(point.changed && point.toolType == TouchToolType.Finger){
             Dialog:pointerDownPosition = null
             Dialog:pointerDownTimestamp = null
 
