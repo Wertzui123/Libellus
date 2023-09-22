@@ -134,7 +134,8 @@ AppState:pen = AppState:pens[0]
 var circularEraser = new CircularEraser(30)
 var pathEraser = new PathEraser()
 var list<Canvas> penIcons = []
-var penIconData = $embed("icons/pen.png")
+var penIconDataLight = $embed("icons/pen_light.png")
+var penIconDataDark = $embed("icons/pen_dark.png")
 var circularEraserIcon = new Canvas(1, 1)
 var pathEraserIcon = new Canvas(1, 1)
 var themeSwitchIcon = new Canvas(1, 1)
@@ -1525,6 +1526,10 @@ window.onPaint = callback(Canvas c) {
     var i = 0
     foreach(AppState:pens as p){
         if(penIcons.length < i + 1){
+            var penIconData = penIconDataLight
+            if(AppState:theme == Theme.Dark){
+                penIconData = penIconDataDark
+            }
             var icon = Canvas:fromFileData(penIconData)
             var color = p.color
             if(AppState:theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
@@ -1535,12 +1540,19 @@ window.onPaint = callback(Canvas c) {
             penIcons.add(icon)
         }
         if(CacheUtils:hasSizeChangedForOnPaint || CacheUtils:hasThemeChangedForOnPaint || CacheUtils:hasPenColorChanged){
+            var penIconData = penIconDataLight
+            if(AppState:theme == Theme.Dark){
+                penIconData = penIconDataDark
+            }
             var icon = Canvas:fromFileData(penIconData)
             var color = p.color
             if(AppState:theme == Theme.Dark && color.r == 0b && color.g == 0b && color.b == 0b){
                 color = Color:fromARGB(255, 255, 255, 255)
             }
-            icon.replaceColor(Color:fromARGB(255, 128, 128, 128), color)
+            if(AppState:theme == Theme.Dark){
+                icon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 128, 128, 128))
+            }
+            icon.replaceColorIgnoreAlpha(Color:fromRGB(128, 128, 128), color)
             icon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
             penIcons[i] = icon
         }
@@ -1582,8 +1594,12 @@ window.onPaint = callback(Canvas c) {
     }
 
     i++
-    if(CacheUtils:hasSizeChangedForOnPaint || pathEraserIcon.width == 1){
-        pathEraserIcon = Canvas:fromFileData($embed("icons/pen.png"))
+    if(CacheUtils:hasSizeChangedForOnPaint || CacheUtils:hasThemeChangedForOnPaint || pathEraserIcon.width == 1){
+        var penIconData = penIconDataLight
+        if(AppState:theme == Theme.Dark){
+            penIconData = penIconDataDark
+        }
+        pathEraserIcon = Canvas:fromFileData(penIconData)
         pathEraserIcon.replaceColor(Color:fromARGB(255, 128, 128, 128), Color:fromARGB(255, 255, 192, 203))
         pathEraserIcon.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
     }
@@ -1642,6 +1658,9 @@ window.onPaint = callback(Canvas c) {
 
     if(CacheUtils:hasSizeChangedForOnPaint || logo.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
         logo = Canvas:fromFileData($embed("logo.png"))
+        if(AppState:theme == Theme.Dark){
+            logo.replaceColor(Color:fromARGB(255, 1, 1, 1), Color:fromARGB(255, 129, 65, 18))
+        }
         logo.resize(int(get_toolbar_height(window) * 0.5), int(get_toolbar_height(window) * 0.5))
     }
     c.drawImage(logo, int(get_booklet_list_width(window) / 2 - logo.width / 2), int(get_toolbar_height(window) / 2 - logo.height / 2))

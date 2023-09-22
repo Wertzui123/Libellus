@@ -2,6 +2,8 @@ import graphics
 import math
 import math.geometry
 
+import libellus
+
 [static]
 class ScrollbarUtils {
 
@@ -19,7 +21,11 @@ class ScrollbarUtils {
     method renderVerticalScrollbar(Size totalBounds, Canvas c, Window window){
         var bounds = getVerticalScrollbarBounds(totalBounds, window)
         if(bounds != null){
-            c.drawRectangle(Rectangle(bounds), Color:fromARGB(100, 50, 50, 50))
+            var color = Color:fromARGB(100, 50, 50, 50)
+            if(AppState:theme == Theme.Dark){
+                color = Color:fromARGB(100, 150, 150, 150)
+            }
+            c.drawRectangle(Rectangle(bounds), color)
         }
         var sliderBounds = getVerticalScrollbarSliderBounds(totalBounds, window)
         if(sliderBounds != null){
@@ -32,7 +38,11 @@ class ScrollbarUtils {
     method renderHorizontalScrollbar(Size totalBounds, Canvas c, Window window){
         var bounds = getHorizontalScrollbarBounds(totalBounds, window)
         if(bounds != null){
-            c.drawRectangle(Rectangle(bounds), Color:fromARGB(100, 50, 50, 50))
+            var color = Color:fromARGB(100, 50, 50, 50)
+            if(AppState:theme == Theme.Dark){
+                color = Color:fromARGB(100, 150, 150, 150)
+            }
+            c.drawRectangle(Rectangle(bounds), color)
         }
         var sliderBounds = getHorizontalScrollbarSliderBounds(totalBounds, window)
         if(sliderBounds != null){
