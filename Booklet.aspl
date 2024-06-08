@@ -36,17 +36,7 @@ class Booklet {
     [public]
     method prepare(){
         var folder = io.join_path([self:getBookletsPath(), name])
-        if(io.exists_file(io.join_path([folder, "canvas.cif"]))){
-            var c = ChunkedCanvas:fromFile(io.join_path([folder, "canvas.cif"]))
-            if(!io.exists_directory(io.join_path([folder, "chunks"]))){
-                io.create_directory(io.join_path([folder, "chunks"]))
-            }
-            c.convertToLazy(io.join_path([folder, "canvas.lci"]), io.join_path([folder, "chunks"]))
-            canvas = LazyChunkedCanvas:fromFile(io.join_path([folder, "canvas.lci"]), io.join_path([folder, "chunks"]))
-            io.delete_file(io.join_path([folder, "canvas.cif"]))
-        }elseif(io.exists_file(io.join_path([folder, "canvas.lci"]))){
-            canvas = LazyChunkedCanvas:fromFile(io.join_path([folder, "canvas.lci"]), io.join_path([folder, "chunks"]))
-        }
+        canvas = LazyChunkedCanvas:fromFile(io.join_path([folder, "canvas.lci"]), io.join_path([folder, "chunks"]))
 
         var list<string> sheetPaths = []
         foreach(sheetFiles as file){
