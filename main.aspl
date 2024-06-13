@@ -1509,6 +1509,11 @@ window.onPaint = callback(Canvas c) {
             }
             c.drawText(s, c.width / 2, (i + 1) * factor + get_toolbar_height(window) - AppState:scrollY, font, color, HorizontalAlignment.Center, VerticalAlignment.Top)
             i++
+
+            if((i + 1) * factor + get_toolbar_height(window) - AppState:scrollY > c.height){
+                i = ls.length
+                break
+            }
         }
         sheetImporterHeight = (i + 1) * factor
         $if android{
