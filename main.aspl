@@ -562,17 +562,6 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                 return
             }
             i++
-            if(AppState:zone == Zone.Canvas){
-                if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2) + gridToggleIcon.width && position.y > get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 + gridToggleIcon.height){
-                    if(AppState:zone == Zone.Canvas){
-                        AppState:gridVisible = !AppState:gridVisible
-                        CacheUtils:hasGridVisibilityChanged = true
-                        CacheUtils:hasGridVisibilityChangedForOnPaint = true
-                    }
-                    return
-                }
-                i++
-            }
             if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2) + themeSwitchIcon.width && position.y > get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 + themeSwitchIcon.height){
                 if(AppState:theme == Theme.Light){
                     AppState:theme = Theme.Dark
@@ -584,6 +573,17 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                     CacheUtils:hasThemeChangedForOnPaint = true
                 }
                 return
+            }
+            i++
+            if(AppState:zone == Zone.Canvas){
+                if(position.x > (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2) && position.x < (window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2) + gridToggleIcon.width && position.y > get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 && position.y < get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 + gridToggleIcon.height){
+                    if(AppState:zone == Zone.Canvas){
+                        AppState:gridVisible = !AppState:gridVisible
+                        CacheUtils:hasGridVisibilityChanged = true
+                        CacheUtils:hasGridVisibilityChangedForOnPaint = true
+                    }
+                    return
+                }
             }
         }elseif(position.x <= get_booklet_list_width(window)){
             var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 30d, 10d))).asUnderlined()
@@ -1259,17 +1259,6 @@ window.onTouchUp = callback(list<TouchPoint> points){
                     return
                 }
                 i++
-                if(AppState:zone == Zone.Canvas){
-                    if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2 + gridToggleIcon.width && point.position.y > get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 + gridToggleIcon.height){
-                        if(AppState:zone == Zone.Canvas){
-                            AppState:gridVisible = !AppState:gridVisible
-                            CacheUtils:hasGridVisibilityChanged = true
-                            CacheUtils:hasGridVisibilityChangedForOnPaint = true
-                        }
-                        return
-                    }
-                    i++
-                }
                 if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2 + themeSwitchIcon.width && point.position.y > get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - themeSwitchIcon.height / 2 + themeSwitchIcon.height){
                     if(AppState:theme == Theme.Light){
                         AppState:theme = Theme.Dark
@@ -1281,6 +1270,17 @@ window.onTouchUp = callback(list<TouchPoint> points){
                         CacheUtils:hasThemeChangedForOnPaint = true
                     }
                     return
+                }
+                i++
+                if(AppState:zone == Zone.Canvas){
+                    if(point.position.x > window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2 && point.position.x < window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2 + gridToggleIcon.width && point.position.y > get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 && point.position.y < get_toolbar_height(window) / 2f - gridToggleIcon.height / 2 + gridToggleIcon.height){
+                        if(AppState:zone == Zone.Canvas){
+                            AppState:gridVisible = !AppState:gridVisible
+                            CacheUtils:hasGridVisibilityChanged = true
+                            CacheUtils:hasGridVisibilityChangedForOnPaint = true
+                        }
+                        return
+                    }
                 }
             }
             if(AppState:zone == Zone.SheetCollection){
@@ -1656,6 +1656,33 @@ window.onPaint = callback(Canvas c) {
     c.drawImage(imageImporterIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - imageImporterIcon.width / 2), int(get_toolbar_height(window) / 2 - imageImporterIcon.height / 2))
     i++
 
+    if(AppState:theme == Theme.Dark){
+        if(CacheUtils:hasSizeChangedForOnPaint || themeSwitchIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
+            themeSwitchIcon = Canvas:fromFileData($embed("icons/sun.png"))
+            themeSwitchIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
+        }
+        c.drawImage(themeSwitchIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2), int(get_toolbar_height(window) / 2 - themeSwitchIcon.height / 2))
+    }else{
+        if(CacheUtils:hasSizeChangedForOnPaint || themeSwitchIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
+            themeSwitchIcon = Canvas:fromFileData($embed("icons/moon.png"))
+            themeSwitchIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
+        }
+        c.drawImage(themeSwitchIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2), int(get_toolbar_height(window) / 2 - themeSwitchIcon.height / 2))
+    }
+    i++
+
+    if(AppState:zone == Zone.Canvas){
+        if(CacheUtils:hasSizeChangedForOnPaint || gridToggleIcon.width == 1 || CacheUtils:hasGridVisibilityChangedForOnPaint || CacheUtils:hasThemeChangedForOnPaint){
+            gridToggleIcon = Canvas:fromFileData($embed("icons/grid.png"))
+            if(AppState:theme == Theme.Dark){
+                gridToggleIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
+            }
+            gridToggleIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
+        }
+        c.drawImage(gridToggleIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2), int(get_toolbar_height(window) / 2 - gridToggleIcon.height / 2))
+        i++
+    }
+
     if(CacheUtils:hasSizeChangedForOnPaint || logo.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
         logo = Canvas:fromFileData($embed("logo.png"))
         if(AppState:theme == Theme.Dark){
@@ -1696,33 +1723,6 @@ window.onPaint = callback(Canvas c) {
         c.drawImage(bookletIcon, int(get_booklet_list_width(window) / 10), int(y - size.height * 2))
         y += int(bookletIcon.height * 1.2)
     }
-
-    if(AppState:zone == Zone.Canvas){
-        if(CacheUtils:hasSizeChangedForOnPaint || gridToggleIcon.width == 1 || CacheUtils:hasGridVisibilityChangedForOnPaint || CacheUtils:hasThemeChangedForOnPaint){
-            gridToggleIcon = Canvas:fromFileData($embed("icons/grid.png"))
-            if(AppState:theme == Theme.Dark){
-                gridToggleIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
-            }
-            gridToggleIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
-        }
-        c.drawImage(gridToggleIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - gridToggleIcon.width / 2), int(get_toolbar_height(window) / 2 - gridToggleIcon.height / 2))
-        i++
-    }
-
-    if(AppState:theme == Theme.Dark){
-        if(CacheUtils:hasSizeChangedForOnPaint || themeSwitchIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
-            themeSwitchIcon = Canvas:fromFileData($embed("icons/sun.png"))
-            themeSwitchIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
-        }
-        c.drawImage(themeSwitchIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2), int(get_toolbar_height(window) / 2 - themeSwitchIcon.height / 2))
-    }else{
-        if(CacheUtils:hasSizeChangedForOnPaint || themeSwitchIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
-            themeSwitchIcon = Canvas:fromFileData($embed("icons/moon.png"))
-            themeSwitchIcon.resize(int(math.sqrt(double(window.width * window.height)) / 20), int(math.sqrt(double(window.width * window.height)) / 20))
-        }
-        c.drawImage(themeSwitchIcon, int(window.width / float(get_toolbar_items_count()) * (i + 1) + get_booklet_list_width(window) - themeSwitchIcon.width / 2), int(get_toolbar_height(window) / 2 - themeSwitchIcon.height / 2))
-    }
-    i++
 
     if(CacheUtils:hasChangedForOnPaint){
         CacheUtils:hasChangedForOnPaint = false
