@@ -40,8 +40,10 @@ class Booklet {
 
         var list<string> sheetPaths = []
         foreach(sheetFiles as file){
-            sheets.add(Sheet:fromFile(string(folder) + "/sheets/" + string(file)))
-            sheetPaths.add(string(folder) + "/sheets/" + string(file))
+            if(io.exists_file(string(folder) + "/sheets/" + string(file))){
+                sheets.add(Sheet:fromFile(string(folder) + "/sheets/" + string(file)))
+                sheetPaths.add(string(folder) + "/sheets/" + string(file))
+            }
         }
         foreach(io.files(string(folder) + "/sheets") as file){
             if(!file.endsWith(".canvas.png") && !sheetPaths.contains(string(folder) + "/sheets/" + string(file))){
