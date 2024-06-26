@@ -11,52 +11,13 @@ import time
 
 var int UNDO_REDO_LIMIT = 30
 
+AppState:init()
+
 var Window window = new Window("Libellus", 500, 500)
 
 if(!io.exists_directory(Booklet:getBookletsPath())){
     io.create_directory(Booklet:getBookletsPath())
 }
-
-foreach([
-    map<string, any>{
-        "name" => "Libellus",
-        "color" => Color:fromARGB(255, 249, 186, 5)
-    },
-    map<string, any>{
-        "name" => "English",
-        "color" => Color:fromARGB(255, 0, 255, 0)
-    },
-    map<string, any>{
-        "name" => "German",
-        "color" => Color:fromARGB(255, 0, 0, 255)
-    },
-    map<string, any>{
-        "name" => "History",
-        "color" => Color:fromARGB(255, 128, 64, 64)
-    },
-    map<string, any>{
-        "name" => "Math",
-        "color" => Color:fromARGB(255, 255, 0, 0)
-    },
-    map<string, any>{
-        "name" => "Physics",
-        "color" => Color:fromARGB(255, 255, 255, 0)
-    }
-] as b){
-    var create = false
-    if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"])]))){
-        create = true
-        io.create_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"])]))
-    }
-    if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "sheets"]))){
-        io.create_directory(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "sheets"]))
-    }
-    if(create || !io.exists_file(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "booklet.json"]))){
-        io.write_file(io.join_path([Booklet:getBookletsPath(), string(b["name"]), "booklet.json"]), json.encode(map<string, any>{"color" => map<string, any>{"r" => Color(b["color"]).r, "g" => Color(b["color"]).g, "b" => Color(b["color"]).b, "a" => Color(b["color"]).a}, "sheets" => list<any>[], "scroll" => map<string, any>{"x" => 0, "y" => 0}}))
-    }
-}
-
-AppState:init()
 
 var bookletName = "Libellus"
 if(!io.exists_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))){
