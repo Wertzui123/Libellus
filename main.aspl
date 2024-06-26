@@ -125,6 +125,7 @@ if(booklets.length == 0 || !hasAnySelected){
     if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), booklet.name, "sheets"]))){
         io.create_directory(io.join_path([Booklet:getBookletsPath(), booklet.name, "sheets"]))
     }
+    booklet.save() // create an .lci file
     booklet.prepare()
 }
 if(io.exists_file(io.join_path([Booklet:getBookletsPath(), "pens.json"]))){
