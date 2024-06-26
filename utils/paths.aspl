@@ -19,9 +19,9 @@ function clear_path(ICanvas canvas, int x, int y, ImageDiff? diff = null){
             handled[pos[0]].add(pos[1])
             var pixel = none
             if(canvas oftype LazyChunkedCanvas){
-                if(!LazyChunkedCanvas(canvas).isChunkLoaded(int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT))){
-                    LazyChunkedCanvas(canvas).loadChunk(int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT))
-                    chunksLoaded.add([int(pos[0] / LazyChunkedCanvas:CANVAS_WIDTH), int(pos[1] / LazyChunkedCanvas:CANVAS_HEIGHT)])
+                if(!LazyChunkedCanvas(canvas).isChunkLoaded(int(pos[0] / LazyChunkedCanvas:CHUNK_WIDTH), int(pos[1] / LazyChunkedCanvas:CHUNK_HEIGHT))){
+                    LazyChunkedCanvas(canvas).loadChunk(int(pos[0] / LazyChunkedCanvas:CHUNK_WIDTH), int(pos[1] / LazyChunkedCanvas:CHUNK_HEIGHT))
+                    chunksLoaded.add([int(pos[0] / LazyChunkedCanvas:CHUNK_WIDTH), int(pos[1] / LazyChunkedCanvas:CHUNK_HEIGHT)])
                 }
                 pixel = LazyChunkedCanvas(canvas).getPixel(pos[0], pos[1])
             }else{

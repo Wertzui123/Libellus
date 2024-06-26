@@ -14,9 +14,9 @@ class ImageDiff {
             foreach(previousPixels as y => row){
                 newPreviousPixels[y] = {}
                 foreach(row as x => color){
-                    if(!LazyChunkedCanvas(canvas).isChunkLoaded(int(x / LazyChunkedCanvas:CANVAS_WIDTH), int(y / LazyChunkedCanvas:CANVAS_HEIGHT))){
-                        LazyChunkedCanvas(canvas).loadChunk(int(x / LazyChunkedCanvas:CANVAS_WIDTH), int(y / LazyChunkedCanvas:CANVAS_HEIGHT))
-                        chunksLoaded.add([int(x / LazyChunkedCanvas:CANVAS_WIDTH), int(y / LazyChunkedCanvas:CANVAS_HEIGHT)])
+                    if(!LazyChunkedCanvas(canvas).isChunkLoaded(int(x / LazyChunkedCanvas:CHUNK_WIDTH), int(y / LazyChunkedCanvas:CHUNK_HEIGHT))){
+                        LazyChunkedCanvas(canvas).loadChunk(int(x / LazyChunkedCanvas:CHUNK_WIDTH), int(y / LazyChunkedCanvas:CHUNK_HEIGHT))
+                        chunksLoaded.add([int(x / LazyChunkedCanvas:CHUNK_WIDTH), int(y / LazyChunkedCanvas:CHUNK_HEIGHT)])
                     }
                     newPreviousPixels[y][x] = LazyChunkedCanvas(canvas).getPixel(x, y)
                     LazyChunkedCanvas(canvas).setPixel(x, y, color, false)
@@ -53,14 +53,14 @@ class ImageDiff {
         previousPixels[y][x] = canvas.getPixel(x, y)
     }
 
-    method trackIfNotNone(Canvas|ChunkedCanvas|LazyChunkedCanvas canvas, int x, int y){
+    method trackIfNotNone(Canvas|PrimitiveChunkedCanvas|LazyChunkedCanvas canvas, int x, int y){
         /*if(canvas oftype Canvas){
             var pixel = Canvas(canvas).getPixel(x, y)
             if(pixel.r == 0b && pixel.g == 0b && pixel.b == 0b && pixel.a == 0b){
                 return
             }
-        }elseif(canvas oftype ChunkedCanvas){
-            var pixel = ChunkedCanvas(canvas).getPixel(x, y)
+        }elseif(canvas oftype PrimitiveChunkedCanvas){
+            var pixel = PrimitiveChunkedCanvas(canvas).getPixel(x, y)
             if(pixel.r == 0b && pixel.g == 0b && pixel.b == 0b && pixel.a == 0b){
                 return
             }
