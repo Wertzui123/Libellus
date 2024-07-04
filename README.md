@@ -13,5 +13,22 @@ I have originally written Libellus for personal purposes and use it basically ev
 * **Builtin sheet collection** for writing on scanned documents
 * **No account** or **internet connection required** to set up and use the app
 
+## Current state
+> [!WARNING]
+While Libellus is already usable in principle, it is currently most likely not worth being used by anyone but me.
+
+That is mainly because of the following deficits:
+* **Performance issues/lag** (especially on mobile/lower-end devices)
+* **Stability issues** (some crashes and bugs)
+* **No export/import functionality** (except for the builtin sheet collection)
+
+Please also keep in mind that Libellus is
+1. **raster-based** and not vector-based
+2.  **for booklets** and not for single notes
+
+by design, which might not be what you are looking for.
+
+Also note that the code is currently pretty ugly - I will probably rewrite it soon (when time allows me to).
+
 ## Credits
 Many thanks to https://github.com/apancik/public-domain-icons for their great public domain icon collection!
