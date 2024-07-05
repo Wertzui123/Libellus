@@ -806,7 +806,7 @@ window.onTouchDown = callback(list<TouchPoint> points){
                             }
                         }elseif(AppState:pen == pathEraser){
                             if(AppState:zone == Zone.Canvas){
-                                var pixel = booklet.canvas.getPixel(int((point.position.x - get_booklet_list_width(window) + AppState:scrollX) / AppState:zoom), int((point.position.y - get_toolbar_height(window) + AppState:scrollY) / AppState:zoom))
+                                var pixel = booklet.canvas.getPixel(int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY))
                                 if(!(pixel.a == 0b && pixel.r == 0b && pixel.g == 0b && pixel.b == 0b)){
                                     utils.clear_path(booklet.canvas, int((point.position.x - get_booklet_list_width(window)) / AppState:zoom + AppState:scrollX), int((point.position.y - get_toolbar_height(window)) / AppState:zoom + AppState:scrollY), ImageDiff(undoList[undoList.length - 1]))
                                 }
