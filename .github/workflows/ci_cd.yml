@@ -1,0 +1,21 @@
+name: CI/CD
+
+on:
+  - push
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install graphics libraries
+        run: sudo apt-get install --quiet -y libglfw3-dev libxi-dev libxcursor-dev
+
+      - name: Install ASPL
+        uses: aspl-lang/setup-aspl@v1
+
+      - name: Build Libellus
+        run: aspl -cc gcc -backend c compile .
