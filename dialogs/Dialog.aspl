@@ -25,6 +25,11 @@ class Dialog {
     } // TODO: Mark as abstract when the compiler supports it
 
     [public]
+    method containsPoint(Point point) returns bool{
+        return bounds.containsPoint(point)
+    }
+
+    [public]
     [abstract]
     method draw(Canvas canvas)
 
@@ -39,5 +44,13 @@ class Dialog {
     [public]
     [abstract]
     method onPointerUp(Point position)
+
+    [public]
+    [abstract]
+    method onKeyDown(KeyCode key)
+
+    [public]
+    [abstract]
+    method onKeyUp(KeyCode key)
     
 }

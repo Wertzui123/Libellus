@@ -1,0 +1,329 @@
+import graphics
+import math.geometry
+import io
+import gui
+
+import libellus
+import libellus.utils
+
+class BookletCreationDialog extends Dialog {
+
+    property Window window
+    [public]
+    property Rectangle bounds{
+        get{
+            return new Rectangle(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 2f - (window.width - libellus.get_booklet_list_width(window)) / 4f), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 2f - (window.height - libellus.get_toolbar_height(window)) / 4f)), new Size(float((window.width - libellus.get_booklet_list_width(window)) / 4f * 2), float((window.height - libellus.get_toolbar_height(window)) / 4f * 2)))
+        }
+    }
+    
+    [public]
+    property Rectangle createIconBounds{
+        get{
+            var min = float(math.min((window.width - libellus.get_booklet_list_width(window)) / 8d, (window.height - libellus.get_toolbar_height(window)) / 8d))
+            return new Rectangle(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 8f * 4 - min / 2f), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 5 - min / 2f)), new Size(min, min))
+        }
+    }
+
+    [static]
+    property Canvas createIconOriginal
+    property bool createIconOriginalInitialized
+    property Canvas createIcon
+
+    property SingleLineTextBox nameTB
+    property SingleLineTextBox rTB
+    property SingleLineTextBox gTB
+    property SingleLineTextBox bTB
+
+    property int lastWidth
+    property int lastHeight
+
+    [public]
+    method construct(Window window){
+        this.window = window
+
+        if(!createIconOriginalInitialized){
+            createIconOriginal = Canvas:fromFileData($embed("../icons/new_sheet.png"))
+            createIconOriginalInitialized = true
+        }
+        var textColor = Color:fromARGB(255, 0, 0, 0)
+        var backgroundColor = Color:fromARGB(255, 255, 255, 255)
+        var borderColor = Color:fromARGB(255, 0, 0, 0)
+        if(AppState:theme == Theme.Dark){
+            textColor = Color:fromARGB(255, 255, 255, 255)
+            backgroundColor = Color:fromARGB(255, 0, 0, 0)
+            borderColor = Color:fromARGB(255, 255, 255, 255)
+        }
+        var useCustomVirtualKeyboard = false
+        $if android{
+            useCustomVirtualKeyboard = true
+        }
+        var font = Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 5d)))
+        this.nameTB = new SingleLineTextBox(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 8f * 4), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 3.5)), "", font, 0, textColor, backgroundColor, borderColor, HorizontalAlignment.Center, VerticalAlignment.Center, useCustomVirtualKeyboard)
+        this.rTB = new SingleLineTextBox(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 9f * 3), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 4)), "255", font, 0, textColor, backgroundColor, borderColor, HorizontalAlignment.Center, VerticalAlignment.Center, useCustomVirtualKeyboard)
+        this.gTB = new SingleLineTextBox(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 9f * 4), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 4)), "255", font, 0, textColor, backgroundColor, borderColor, HorizontalAlignment.Center, VerticalAlignment.Center, useCustomVirtualKeyboard)
+        this.bTB = new SingleLineTextBox(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 9f * 5), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 4)), "255", font, 0, textColor, backgroundColor, borderColor, HorizontalAlignment.Center, VerticalAlignment.Center, useCustomVirtualKeyboard)
+        // TODO: Change the nameTB position on resize
+        // TODO: Make the nameTB a certain width by default
+        this.lastWidth = window.width
+        this.lastHeight = window.height
+    }
+
+    [public]
+    method containsPoint(Point point) returns bool{
+        if(nameTB.hasFocus && nameTB.virtualKeyboard != null && nameTB.virtualKeyboard?!.bounds.containsPoint(point)){
+            return true
+        }
+        if(rTB.hasFocus && rTB.virtualKeyboard != null && rTB.virtualKeyboard?!.bounds.containsPoint(point)){
+            return true
+        }
+        if(gTB.hasFocus && gTB.virtualKeyboard != null && gTB.virtualKeyboard?!.bounds.containsPoint(point)){
+            return true
+        }
+        if(bTB.hasFocus && bTB.virtualKeyboard != null && bTB.virtualKeyboard?!.bounds.containsPoint(point)){
+            return true
+        }
+        return parent(Dialog).containsPoint(point)
+    }
+
+    [public]
+    method draw(Canvas canvas){
+        if(createIcon == null || createIcon.width != createIconBounds.size.width || createIcon.height != createIconBounds.size.height){
+            createIcon = createIconOriginal.copy()
+            if(AppState:theme == Theme.Dark){
+             createIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 255, 255, 255))
+            }
+            createIcon.resize(int(createIconBounds.size.width), int(createIconBounds.size.height))
+        }
+   
+        if(AppState:theme == Theme.Light){
+            canvas.fillRectangle(bounds, Color:fromARGB(255, 230, 230, 234))
+        }else{
+            canvas.fillRectangle(bounds, Color:fromARGB(255, 26, 22, 30))
+        }
+        canvas.drawRectangle(bounds, Color:fromARGB(255, 64, 64, 64))
+        canvas.drawImage(createIcon, int(createIconBounds.position.x), int(createIconBounds.position.y))
+
+        var hasChanged = false
+        if(canvas.width != lastWidth){
+            lastWidth = canvas.width
+            hasChanged = true
+        }
+        if(canvas.height != lastHeight){
+            lastHeight = canvas.height
+            hasChanged = true
+        }
+        if(hasChanged){
+            nameTB.position = new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 8f * 4), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 3.5))
+            rTB.position = new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 9f * 3), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 4))
+            gTB.position = new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 9f * 4), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 4))
+            bTB.position = new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 9f * 5), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 4))
+        }
+
+        var textColor = Color:fromARGB(255, 0, 0, 0)
+        if(AppState:theme == Theme.Dark){
+            textColor = Color:fromARGB(255, 255, 255, 255)
+        }
+
+        canvas.drawText("Create a new booklet", int(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 2f), int(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 3), Font:default.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 30d, 10d))), textColor, HorizontalAlignment.Center, VerticalAlignment.Center)
+
+        nameTB.draw(canvas)
+        rTB.draw(canvas)
+        gTB.draw(canvas)
+        bTB.draw(canvas)
+        
+        canvas.fillCircle(new Ellipse(new Point(float(libellus.get_booklet_list_width(window) + (window.width - libellus.get_booklet_list_width(window)) / 9f * 6), float(libellus.get_toolbar_height(window) + (window.height - libellus.get_toolbar_height(window)) / 8f * 4)), new Size(float(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 5d)), float(math.max(int(math.sqrt(double(window.width * window.height))) / 50d, 5d)))), Color:fromARGB(255, byte(int(rTB.text)), byte(int(gTB.text)), byte(int(bTB.text))))
+    }
+
+    [public]
+    method onPointerDown(Point position){
+        if(nameTB.onMouseDownAny(position, MouseButton.Left)){
+            return
+        }
+        if(rTB.onMouseDownAny(position, MouseButton.Left)){
+            return
+        }
+        if(gTB.onMouseDownAny(position, MouseButton.Left)){
+            return
+        }
+        if(bTB.onMouseDownAny(position, MouseButton.Left)){
+            return
+        }
+        if(nameTB.bounds.containsPoint(position)){
+            nameTB.onMouseDown(position, MouseButton.Left)
+        }
+        if(rTB.bounds.containsPoint(position)){
+            rTB.onMouseDown(position, MouseButton.Left)
+        }
+        if(gTB.bounds.containsPoint(position)){
+            gTB.onMouseDown(position, MouseButton.Left)
+        }
+        if(bTB.bounds.containsPoint(position)){
+            bTB.onMouseDown(position, MouseButton.Left)
+        }
+    }
+
+    [public]
+    method onPointerMove(Point from, Point to){
+        if(nameTB.onMouseMoveAny(from, to.x - from.x, to.y - from.y)){
+            return
+        }
+        if(rTB.onMouseMoveAny(from, to.x - from.x, to.y - from.y)){
+            return
+        }
+        if(gTB.onMouseMoveAny(from, to.x - from.x, to.y - from.y)){
+            return
+        }
+        if(bTB.onMouseMoveAny(from, to.x - from.x, to.y - from.y)){
+            return
+        }
+        if(nameTB.bounds.containsPoint(to)){
+            nameTB.onMouseMove(to, to.x - from.x, to.y - from.y)
+        }
+        if(rTB.bounds.containsPoint(to)){
+            rTB.onMouseMove(to, to.x - from.x, to.y - from.y)
+        }
+        if(gTB.bounds.containsPoint(to)){
+            gTB.onMouseMove(to, to.x - from.x, to.y - from.y)
+        }
+        if(bTB.bounds.containsPoint(to)){
+            bTB.onMouseMove(to, to.x - from.x, to.y - from.y)
+        }
+    }
+
+    [public]
+    method onPointerUp(Point position){
+        if(nameTB.onMouseUpAny(position, MouseButton.Left)){
+            nameTB.onMouseClickAny(position, MouseButton.Left)
+            rTB.onMouseClickAny(position, MouseButton.Left)
+            gTB.onMouseClickAny(position, MouseButton.Left)
+            bTB.onMouseClickAny(position, MouseButton.Left)
+            return
+        }
+        if(rTB.onMouseUpAny(position, MouseButton.Left)){
+            rTB.onMouseClickAny(position, MouseButton.Left)
+            return
+        }
+        if(gTB.onMouseUpAny(position, MouseButton.Left)){
+            gTB.onMouseClickAny(position, MouseButton.Left)
+            return
+        }
+        if(bTB.onMouseUpAny(position, MouseButton.Left)){
+            bTB.onMouseClickAny(position, MouseButton.Left)
+            return
+        }
+        nameTB.hasFocus = false
+        rTB.hasFocus = false
+        gTB.hasFocus = false
+        bTB.hasFocus = false
+        if(nameTB.bounds.containsPoint(position)){
+            nameTB.hasFocus = true
+            nameTB.onMouseUp(position, MouseButton.Left)
+        }
+        if(rTB.bounds.containsPoint(position)){
+            rTB.hasFocus = true
+            rTB.onMouseUp(position, MouseButton.Left)
+        }
+        if(gTB.bounds.containsPoint(position)){
+            gTB.hasFocus = true
+            gTB.onMouseUp(position, MouseButton.Left)
+        }
+        if(bTB.bounds.containsPoint(position)){
+            bTB.hasFocus = true
+            bTB.onMouseUp(position, MouseButton.Left)
+        }
+
+        if(nameTB.onMouseClickAny(position, MouseButton.Left)){
+            return
+        }
+        if(rTB.onMouseClickAny(position, MouseButton.Left)){
+            return
+        }
+        if(gTB.onMouseClickAny(position, MouseButton.Left)){
+            return
+        }
+        if(bTB.onMouseClickAny(position, MouseButton.Left)){
+            return
+        }
+        nameTB.hasFocus = false
+        rTB.hasFocus = false
+        gTB.hasFocus = false
+        bTB.hasFocus = false
+        if(nameTB.bounds.containsPoint(position)){
+            nameTB.hasFocus = true
+            nameTB.onMouseClick(position, MouseButton.Left)
+        }
+        if(rTB.bounds.containsPoint(position)){
+            rTB.hasFocus = true
+            rTB.onMouseClick(position, MouseButton.Left)
+        }
+        if(gTB.bounds.containsPoint(position)){
+            gTB.hasFocus = true
+            gTB.onMouseClick(position, MouseButton.Left)
+        }
+        if(bTB.bounds.containsPoint(position)){
+            bTB.hasFocus = true
+            bTB.onMouseClick(position, MouseButton.Left)
+        }
+
+        if(position.x > createIconBounds.position.x && position.x < createIconBounds.position.x + createIconBounds.size.width && position.y > createIconBounds.position.y && position.y < createIconBounds.position.y + createIconBounds.size.height){
+            var create = false
+            if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), nameTB.text]))){
+                create = true
+                io.create_directory(io.join_path([Booklet:getBookletsPath(), nameTB.text]))
+            }
+            if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), nameTB.text, "chunks"]))){
+                io.create_directory(io.join_path([Booklet:getBookletsPath(), nameTB.text, "chunks"]))
+            }
+            if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), nameTB.text, "sheets"]))){
+                io.create_directory(io.join_path([Booklet:getBookletsPath(), nameTB.text, "sheets"]))
+            }
+            if(create || !io.exists_file(io.join_path([Booklet:getBookletsPath(), nameTB.text, "booklet.json"]))){
+                io.write_file(io.join_path([Booklet:getBookletsPath(), nameTB.text, "booklet.json"]), json.encode(map<string, any>{"color" => map<string, any>{"r" => int(rTB.text), "g" => int(gTB.text), "b" => int(bTB.text), "a" => 255}, "sheets" => list<any>[], "scroll" => map<string, any>{"x" => 0, "y" => 0}}))
+            }
+            var c = new LazyChunkedCanvas(window.width * 2 - libellus.get_booklet_list_width(window), window.height * 2 - libellus.get_toolbar_height(window), io.join_path([Booklet:getBookletsPath(), nameTB.text, "chunks"])) // TODO: Use a smaller starting size
+            var Booklet b = new Booklet(nameTB.text, Color:fromARGB(255, byte(int(rTB.text)), byte(int(gTB.text)), byte(int(bTB.text))), c, [], 0, 0)
+            AppState:booklets.add(b)
+            AppState:dialog = null
+            isInUpAction = true
+        }
+    }
+
+    [public]
+    method onKeyDown(KeyCode key){
+        if(nameTB.hasFocus){
+            nameTB.onKeyDown(key, window.isKeyDown(KeyCode.left_shift))
+        }
+        if(rTB.hasFocus){
+            var previousText = rTB.text
+            var previousCaret = rTB.caret
+            rTB.onKeyDown(key, window.isKeyDown(KeyCode.left_shift))
+            if(int(rTB.text) > 255 || int(rTB.text) < 0){
+                rTB.text = previousText
+                rTB.caret = previousCaret
+            }
+        }
+        if(gTB.hasFocus){
+            var previousText = gTB.text
+            var previousCaret = gTB.caret
+            gTB.onKeyDown(key, window.isKeyDown(KeyCode.left_shift))
+            if(int(gTB.text) > 255 || int(gTB.text) < 0){
+                gTB.text = previousText
+                gTB.caret = previousCaret
+            }
+        }
+        if(bTB.hasFocus){
+            var previousText = bTB.text
+            var previousCaret = bTB.caret
+            bTB.onKeyDown(key, window.isKeyDown(KeyCode.left_shift))
+            if(int(bTB.text) > 255 || int(bTB.text) < 0){
+                bTB.text = previousText
+                bTB.caret = previousCaret
+            }
+        }
+    }
+
+    [public]
+    method onKeyUp(KeyCode key){
+    }
+    
+}

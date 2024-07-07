@@ -179,5 +179,13 @@ class PenEditorDialog extends Dialog {
             }
         }
     }
+
+    [public]
+    method onKeyDown(KeyCode key){
+    }
+
+    [public]
+    method onKeyUp(KeyCode key){
+    }
     
 }

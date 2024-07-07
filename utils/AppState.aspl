@@ -38,6 +38,9 @@ class AppState {
     [static]
     property Pen|CircularEraser|PathEraser pen
 
+    [public]
+    [static]
+    property list<Booklet> booklets = []
 
     [public]
     [static]

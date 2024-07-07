@@ -25,7 +25,6 @@ if(!io.exists_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))){
 }else{
     bookletName = io.read_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]))
 }
-var list<Booklet> booklets = []
 var Booklet booklet = new Booklet("Notes", Color:fromARGB(255, 249, 186, 5), new LazyChunkedCanvas(window.width - get_booklet_list_width(window), window.height - get_toolbar_height(window), io.join_path([Booklet:getBookletsPath(), "Notes", "chunks"])), [], 0, 0)
 var hasAnySelected = false
 var bookletFolders = utils.sort_alphabetically(io.directories(Booklet:getBookletsPath()))
@@ -72,11 +71,11 @@ foreach(bookletFolders as folder){
             AppState:scrollX = scrollX
             AppState:scrollY = scrollY
         }
-        booklets.add(b)
+        AppState:booklets.add(b)
     }
 }
-if(booklets.length == 0 || !hasAnySelected){
-    booklets.add(booklet)
+if(AppState:booklets.length == 0 || !hasAnySelected){
+    AppState:booklets.add(booklet)
     if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), booklet.name, "chunks"]))){
         if(!io.exists_directory(io.join_path([Booklet:getBookletsPath(), booklet.name]))){
             io.create_directory(io.join_path([Booklet:getBookletsPath(), booklet.name]))
@@ -110,6 +109,7 @@ var imageImporterIcon = new Canvas(1, 1)
 var folderIcon = new Canvas(1, 1)
 var imageFileIcon = new Canvas(1, 1)
 var bookletIcon = new Canvas(1, 1)
+var newBookletIcon = new Canvas(1, 1)
 var newSheetIconOriginal = Canvas:fromFileData($embed("icons/new_sheet.png"))
 var sheetCollectionHeight = 0
 var list<Rectangle> sheetCollectionBounds = []
@@ -145,7 +145,7 @@ window.onMouseDown = callback(Point position, MouseButton button) {
         if (button == MouseButton.Left){
             isMouseDown = true
             if(AppState:dialog != null){
-                if(AppState:dialog?!.bounds.containsPoint(position)){
+                if(AppState:dialog?!.containsPoint(position)){
                     AppState:dialog?!.onPointerDown(position)
                 }
             }elseif(AppState:zone == Zone.Canvas || AppState:zone == Zone.Sheet){
@@ -255,7 +255,7 @@ window.onMouseMove = callback(Point position, float deltaX, float deltaY) {
     if(position.x > get_booklet_list_width(window) && position.y > get_toolbar_height(window)){
         if (isMouseDown) {
             if(AppState:dialog != null){
-                if(AppState:dialog?!.bounds.containsPoint(position) && AppState:dialog?!.bounds.containsPoint(new Point(position.x - deltaX, position.y - deltaY))){
+                if(AppState:dialog?!.containsPoint(position) && AppState:dialog?!.containsPoint(new Point(position.x - deltaX, position.y - deltaY))){
                     AppState:dialog?!.onPointerMove(position, new Point(position.x - deltaX, position.y - deltaY))
                 }
             }elseif(AppState:zone == Zone.Canvas || AppState:zone == Zone.Sheet){
@@ -375,7 +375,7 @@ window.onMouseUp = callback(Point position, MouseButton button) {
     }
 
     if(AppState:dialog != null){
-        if(!Dialog:isInDownAction && AppState:dialog?!.bounds.containsPoint(position)){
+        if(!Dialog:isInDownAction && AppState:dialog?!.containsPoint(position)){
             AppState:dialog?!.onPointerUp(position)
         }
     }
@@ -387,7 +387,7 @@ window.onMouseClick = callback(Point position, MouseButton button) {
     if(AppState:dialog != null){
         if(Dialog:isInDownAction){
             Dialog:isInDownAction = false
-        }elseif(!AppState:dialog?!.bounds.containsPoint(position)){
+        }elseif(!AppState:dialog?!.containsPoint(position)){
             AppState:dialog = null
         }
         return
@@ -552,7 +552,7 @@ window.onMouseClick = callback(Point position, MouseButton button) {
             var y = int(graphics.measure_text_size("Booklets", font).height * 3) + get_toolbar_height(window)
             font = font.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 70d, 7d)))
             var int i = 0
-            foreach(booklets as b){
+            foreach(AppState:booklets as b){
                 var name = b.name
                 var bookletFont = font
                 if(b == booklet){
@@ -584,6 +584,10 @@ window.onMouseClick = callback(Point position, MouseButton button) {
                 }
                 y += int(bookletIcon.height * 1.2)
                 i++
+            }
+            var size = graphics.measure_text_size("/", font)
+            if(position.y >= y - size.height * 1.5 && position.y <= y + size.height * 1.5){
+                AppState:dialog = new BookletCreationDialog(window)
             }
         }else{
             if(AppState:zone == Zone.SheetCollection){
@@ -736,7 +740,7 @@ window.onMouseWheel = callback(Point position, float deltaX, float deltaY) {
 window.onTouchDown = callback(list<TouchPoint> points){
     foreach(points as point){
         if(point.changed){
-            if(AppState:dialog != null && AppState:dialog?!.bounds.containsPoint(point.position)){
+            if(AppState:dialog != null && AppState:dialog?!.containsPoint(point.position)){
                 AppState:dialog?!.onPointerDown(point.position)
                 continue
             }
@@ -854,7 +858,7 @@ window.onTouchMove = callback(list<TouchPoint> points){
     var oldTouchPoints = touchPoints.cloneShallow()
     foreach(points as point){
         if(point.changed){
-            if(AppState:dialog != null && AppState:dialog?!.bounds.containsPoint(point.position)){
+            if(AppState:dialog != null && AppState:dialog?!.containsPoint(point.position)){
                 if(oldTouchPoints.containsKey(point.identifier)){
                     AppState:dialog?!.onPointerMove(oldTouchPoints[point.identifier], point.position)
                 }
@@ -1015,7 +1019,7 @@ window.onTouchUp = callback(list<TouchPoint> points){
                 if(Dialog:isInDownAction){
                     Dialog:isInDownAction = false
                     return
-                }elseif(AppState:dialog?!.bounds.containsPoint(point.position)){
+                }elseif(AppState:dialog?!.containsPoint(point.position)){
                     AppState:dialog?!.onPointerUp(point.position)
                     if(Dialog:isInUpAction){
                         Dialog:isInUpAction = false
@@ -1065,7 +1069,7 @@ window.onTouchUp = callback(list<TouchPoint> points){
                 var y = int(graphics.measure_text_size("Booklets", font).height * 3) + get_toolbar_height(window)
                 font = font.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 70d, 7d)))
                 var int i = 0
-                foreach(booklets as b){
+                foreach(AppState:booklets as b){
                     var name = b.name
                     var bookletFont = font
                     if(b == booklet){
@@ -1097,6 +1101,10 @@ window.onTouchUp = callback(list<TouchPoint> points){
                     }
                     y += int(bookletIcon.height * 1.2)
                     i++
+                }
+                var size = graphics.measure_text_size("/", font)
+                if(point.position.y >= y - size.height * 1.5 && point.position.y <= y + size.height * 1.5){
+                    AppState:dialog = new BookletCreationDialog(window)
                 }
             }else{
                 var i = 0
@@ -1334,6 +1342,16 @@ window.onTouchUp = callback(list<TouchPoint> points){
                 }
             }
         }
+    }
+}
+window.onKeyDown = callback(KeyCode key) {
+    if(AppState:dialog != null){
+        AppState:dialog?!.onKeyDown(key)
+    }
+}
+window.onKeyUp = callback(KeyCode key) {
+    if(AppState:dialog != null){
+        AppState:dialog?!.onKeyUp(key)
     }
 }
 window.onKeyPress = callback(KeyCode key) {
@@ -1679,7 +1697,7 @@ window.onPaint = callback(Canvas c) {
     c.drawText("Booklets", int(get_booklet_list_width(window) / 2), get_toolbar_height(window), font, textColor, HorizontalAlignment.Center, VerticalAlignment.Top)
     var y = int(graphics.measure_text_size("Booklets", font).height * 3) + get_toolbar_height(window)
     font = font.withSize(int(math.max(int(math.sqrt(double(window.width * window.height))) / 70d, 7d)))
-    foreach(booklets as b){
+    foreach(AppState:booklets as b){
         var name = b.name
         var bookletFont = font
         if(b == booklet){
@@ -1695,6 +1713,17 @@ window.onPaint = callback(Canvas c) {
         c.drawImage(bookletIcon, int(get_booklet_list_width(window) / 10), int(y - size.height * 2))
         y += int(bookletIcon.height * 1.2)
     }
+
+    if(CacheUtils:hasSizeChangedForOnPaint || newBookletIcon.width == 1 || CacheUtils:hasThemeChangedForOnPaint){
+        newBookletIcon = Canvas:fromFileData($embed("icons/new_sheet.png"))
+        if(AppState:theme == Theme.Dark){
+            newBookletIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 200, 200, 200))
+        }else{
+            newBookletIcon.replaceColor(Color:fromARGB(255, 0, 0, 0), Color:fromARGB(255, 32, 32, 32))
+        }
+        newBookletIcon.resize(int(get_toolbar_height(window) * 0.2), int(get_toolbar_height(window) * 0.2))
+    }
+    c.drawImage(newBookletIcon, int(get_booklet_list_width(window) / 2f - newBookletIcon.width / 2f), y - int(newBookletIcon.height / 2f))
 
     if(CacheUtils:hasChangedForOnPaint){
         CacheUtils:hasChangedForOnPaint = false

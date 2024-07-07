@@ -86,5 +86,13 @@ class SheetEditorDialog extends Dialog {
             isInUpAction = true
         }
     }
+
+    [public]
+    method onKeyDown(KeyCode key){
+    }
+
+    [public]
+    method onKeyUp(KeyCode key){
+    }
     
 }
