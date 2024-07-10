@@ -87,6 +87,7 @@ if(AppState:booklets.length == 0 || !hasAnySelected){
     }
     booklet.save() // create an .lci file
     booklet.prepare()
+    io.write_file(io.join_path([Booklet:getBookletsPath(), "current.txt"]), booklet.name)
 }
 if(io.exists_file(io.join_path([Booklet:getBookletsPath(), "pens.json"]))){
     AppState:pens = Pen:jsonDecodePens(io.read_file(io.join_path([Booklet:getBookletsPath(), "pens.json"])))
