@@ -1,4 +1,7 @@
 # Libellus 📖
+> [!IMPORTANT]
+Libellus v1 (which you are looking at right now) has been deprecated. I am working on a full rewrite with lots of new features, improved performance, enhanced user experience, and much more!
+
 Libellus (from the Latin for *"little book"*) is a simple, intuitive, yet powerful handwritten note-taking application, designed for both Desktop and Mobile.
 
 No matter if you are a student, a teacher, a researcher, or just a curious person, Libellus is the perfect tool to take and manage all your notes. It's free and open-source and can be used on virtually any device, from your phone or tablet to your desktop computer or laptop.
@@ -14,6 +17,8 @@ I have originally written Libellus for personal purposes and use it basically ev
 * **No account** or **internet connection required** to set up and use the app
 
 ## Current state
+(See above for an update on this.)
+
 > [!WARNING]
 While Libellus is already usable in principle, it is currently most likely not worth being used by anyone but me.
 
